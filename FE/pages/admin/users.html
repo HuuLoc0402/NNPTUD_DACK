@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Người Dùng - MARC Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #DC3545;
+            --success: #28a745;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --danger: #dc3545;
+            --dark: #2C3E50;
+            --light: #F8F7F4;
+            --border: #ddd;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f5f5;
+            color: var(--dark);
+        }
+
+        .admin-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: var(--dark);
+            color: white;
+            padding: 30px 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 30px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            color: white;
+            background-color: rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+        }
+
+        .main-content {
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .table-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filters input,
+        .filters select {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--light);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #ff6b6b);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            margin: 0 3px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .action-btn.edit {
+            background: var(--info);
+            color: white;
+        }
+
+        .action-btn.delete {
+            background: var(--danger);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                z-index: 100;
+            }
+
+            table {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-logo">MARC</div>
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="products.html"><i class="fas fa-box"></i> Sản Phẩm</a></li>
+                <li><a href="categories.html"><i class="fas fa-tags"></i> Danh Mục</a></li>
+                <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> Đơn Hàng</a></li>
+                <li><a href="users.html" class="active"><i class="fas fa-users"></i> Người Dùng</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Thống Kê</a></li>
+                <li><hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);"></li>
+                <li><a href="../customer/index.html"><i class="fas fa-arrow-left"></i> Về Trang Chủ</a></li>
+                <li><a href="javascript:logout();"><i class="fas fa-sign-out-alt"></i> Đăng Xuất</a></li>
+            </ul>
+        </aside>
+
+        <div class="main-content">
+            <div class="header">
+                <h1>Quản Lý Người Dùng</h1>
+            </div>
+
+            <div class="table-section">
+                <div class="filters">
+                    <input type="text" placeholder="Tìm theo tên, email...">
+                    <select>
+                        <option>Tất cả vai trò</option>
+                        <option>Khách Hàng</option>
+                        <option>Admin</option>
+                    </select>
+                    <select>
+                        <option>Tất cả trạng thái</option>
+                        <option>Hoạt Động</option>
+                        <option>Khóa</option>
+                    </select>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Người Dùng</th>
+                            <th>Email</th>
+                            <th>Điện Thoại</th>
+                            <th>Vai Trò</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Tạo</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">NA</div>Nguyễn Văn A</div></td>
+                            <td>nguyenvana@email.com</td>
+                            <td>0901234567</td>
+                            <td>Khách Hàng</td>
+                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
+                            <td>15/02/2024</td>
+                            <td>
+                                <button class="action-btn edit">Sửa</button>
+                                <button class="action-btn delete">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">TB</div>Trần Thị B</div></td>
+                            <td>tranthib@email.com</td>
+                            <td>0912345678</td>
+                            <td>Khách Hàng</td>
+                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
+                            <td>20/01/2024</td>
+                            <td>
+                                <button class="action-btn edit">Sửa</button>
+                                <button class="action-btn delete">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">LC</div>Lê Văn C</div></td>
+                            <td>levanc@email.com</td>
+                            <td>0923456789</td>
+                            <td>Khách Hàng</td>
+                            <td><span class="status-badge badge-warning">Khóa</span></td>
+                            <td>10/03/2024</td>
+                            <td>
+                                <button class="action-btn edit">Sửa</button>
+                                <button class="action-btn delete">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">PT</div>Phạm Thị D</div></td>
+                            <td>phamthid@email.com</td>
+                            <td>0934567890</td>
+                            <td>Admin</td>
+                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
+                            <td>01/01/2024</td>
+                            <td>
+                                <button class="action-btn edit">Sửa</button>
+                                <button class="action-btn delete">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">HE</div>Hoàng Văn E</div></td>
+                            <td>hoangvane@email.com</td>
+                            <td>0945678901</td>
+                            <td>Khách Hàng</td>
+                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
+                            <td>25/03/2024</td>
+                            <td>
+                                <button class="action-btn edit">Sửa</button>
+                                <button class="action-btn delete">Xóa</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                localStorage.removeItem('token');
+                window.location.href = '../auth/login.html';
+            }
+        }
+    </script>
+</body>
+</html>

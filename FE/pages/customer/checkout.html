@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <style>
+        :root {
+            --primary-color: #DC3545;
+            --text-dark: #2C3E50;
+            --text-light: #7F8C8D;
+            --bg-light: #F8F7F4;
+            --accent-gold: #D4AF37;
+            --white: #FFFFFF;
+            --border-color: #E8E8E8;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-dark);
+            background-color: var(--bg-light);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Checkout Page Styles */
+        .breadcrumb {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 40px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .checkout-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 40px;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+            justify-content: center;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            flex: 1;
+            text-align: center;
+        }
+
+        .progress-step::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: #ddd;
+            z-index: -1;
+        }
+
+        .progress-step:last-child::after {
+            display: none;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ddd;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            flex-shrink: 0;
+            margin: 0 auto;
+        }
+
+        .step-number.active {
+            background: var(--primary-color);
+        }
+
+        .step-number.completed {
+            background: var(--primary-color);
+        }
+
+        .step-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .progress-step.active .step-label {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .checkout-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 40px;
+        }
+
+        .checkout-form {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .checkout-step {
+            display: none;
+        }
+
+        .checkout-step.active {
+            display: block;
+        }
+
+        .checkout-form h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: var(--text-dark);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .payment-methods,
+        .shipping-methods {
+            margin: 25px 0;
+        }
+
+        .payment-methods h3,
+        .shipping-methods h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .payment-option,
+        .shipping-option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-option:hover,
+        .shipping-option:hover {
+            border-color: var(--primary-color);
+            background: rgba(220, 53, 69, 0.05);
+        }
+
+        .payment-option input[type="radio"],
+        .shipping-option input[type="radio"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .payment-info {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .payment-info i {
+            font-size: 20px;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+
+        .payment-info div {
+            flex: 1;
+        }
+
+        .payment-info strong {
+            display: block;
+            font-size: 13px;
+            color: var(--text-dark);
+            margin-bottom: 3px;
+        }
+
+        .payment-info p {
+            font-size: 12px;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        .shipping-price {
+            margin-left: auto;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            background: #B82D3B;
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--text-dark);
+            border: 1px solid #ddd;
+            margin-right: 10px;
+        }
+
+        .btn-outline:hover {
+            background: #f5f5f5;
+        }
+
+        .form-actions {
+            display: flex;
+            margin-top: 30px;
+        }
+
+        .checkout-summary {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            height: fit-content;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .checkout-summary h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: v(--text-dark);
+        }
+
+        .summary-row.total {
+            border-top: 2px solid #ddd;
+            padding-top: 12px;
+            margin-top: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .order-review {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+        }
+
+        .review-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .review-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+        }
+
+        .review-section a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .review-section a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .checkout-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .progress-bar {
+                gap: 20px;
+            }
+
+            .checkout-form {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ==================== HEADER COMPONENT ==================== -->
+    <div id="header"></div>
+
+    <!-- ==================== BREADCRUMB ==================== -->
+    <div class="breadcrumb">
+        <a href="index.html">Trang chủ</a> / 
+        <a href="cart.html">Giỏ hàng</a> / 
+        <span>Thanh toán</span>
+    </div>
+
+    <!-- ==================== CHECKOUT SECTION ==================== -->
+    <section class="checkout-container">
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-step active">
+                <div class="step-number active">1</div>
+                <div class="step-label">Thông tin giao hàng</div>
+            </div>
+            <div class="progress-step">
+                <div class="step-number">2</div>
+                <div class="step-label">Thanh toán</div>
+            </div>
+            <div class="progress-step">
+                <div class="step-number">3</div>
+                <div class="step-label">Xác nhận</div>
+            </div>
+        </div>
+
+        <div class="checkout-wrapper">
+            <!-- Checkout Form -->
+            <div class="checkout-form">
+                <!-- Step 1: Shipping Info -->
+                <div class="checkout-step active" id="step1">
+                    <h2>Thông Tin Giao Hàng</h2>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Họ và Tên *</label>
+                            <input type="text" placeholder="Nhập họ và tên" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Số Điện Thoại *</label>
+                            <input type="tel" placeholder="Nhập số điện thoại" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" placeholder="Nhập email" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tỉnh/Thành Phố *</label>
+                            <select required>
+                                <option value="">Chọn tỉnh/thành phố</option>
+                                <option value="hn">Hà Nội</option>
+                                <option value="hcm">TP. Hồ Chí Minh</option>
+                                <option value="dn">Đà Nẵng</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quận/Huyện *</label>
+                            <select required>
+                                <option value="">Chọn quận/huyện</option>
+                                <option value="1">Quận 1</option>
+                                <option value="2">Quận 2</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Địa Chỉ Cụ Thể *</label>
+                        <input type="text" placeholder="Số nhà, tên đường..." required>
+                    </div>
+
+                    <div class="shipping-methods">
+                        <h3>Phương Thức Vận Chuyển</h3>
+                        <label class="shipping-option">
+                            <input type="radio" name="shipping" value="standard" checked>
+                            <div>
+                                <strong>Vận Chuyển Tiêu Chuẩn</strong>
+                                <p>Giao hàng trong 3-5 ngày</p>
+                            </div>
+                            <span class="shipping-price">Miễn phí</span>
+                        </label>
+                        <label class="shipping-option">
+                            <input type="radio" name="shipping" value="express">
+                            <div>
+                                <strong>Vận Chuyển Nhanh</strong>
+                                <p>Giao hàng trong 1-2 ngày</p>
+                            </div>
+                            <span class="shipping-price">50.000 đ</span>
+                        </label>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="goToStep(2)">Tiếp tục hoàn tất thanh toán</button>
+                </div>
+
+                <!-- Step 2: Payment Method -->
+                <div class="checkout-step" id="step2">
+                    <h2>Phương Thức Thanh Toán</h2>
+
+                    <div class="payment-methods">
+                        <h3>Chọn Phương Thức Thanh Toán</h3>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="cod" checked>
+                            <div class="payment-info">
+                                <i class="fas fa-money-bill"></i>
+                                <div>
+                                    <strong>Thanh Toán Khi Nhận Hàng</strong>
+                                    <p>Thanh toán bằng tiền mặt</p>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="vnpay">
+                            <div class="payment-info">
+                                <i class="fas fa-credit-card"></i>
+                                <div>
+                                    <strong>VNPay</strong>
+                                    <p>Thanh toán trực tuyến an toàn</p>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="momo">
+                            <div class="payment-info">
+                                <i class="fas fa-mobile-alt"></i>
+                                <div>
+                                    <strong>MoMo</strong>
+                                    <p>Ví điện tử MoMo</p>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="bank">
+                            <div class="payment-info">
+                                <i class="fas fa-university"></i>
+                                <div>
+                                    <strong>Chuyển Khoản Ngân Hàng</strong>
+                                    <p>Chuyển khoản VietQR</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-outline" onclick="goToStep(1)">Quay Lại</button>
+                        <button class="btn btn-primary" onclick="goToStep(3)" style="margin: 0; margin-left: auto;">Tiếp Tục</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Order Review -->
+                <div class="checkout-step" id="step3">
+                    <h2>Xác Nhận Đơn Hàng</h2>
+
+                    <div class="order-review">
+                        <div class="review-section">
+                            <h3>Thông Tin Giao Hàng</h3>
+                            <p id="shippingReview">
+                                <strong>Tên:</strong> Nguyễn Văn A<br>
+                                <strong>Điện thoại:</strong> 0123456789<br>
+                                <strong>Địa chỉ:</strong> 123 Đường ABC, Quận 1, TP. Hồ Chí Minh<br>
+                                <strong>Vận chuyển:</strong> Tiêu chuẩn (Miễn phí)
+                            </p>
+                            <a href="javascript:void(0)" onclick="goToStep(1)">Thay đổi</a>
+                        </div>
+
+                        <div class="review-section">
+                            <h3>Phương Thức Thanh Toán</h3>
+                            <p id="paymentReview">
+                                <strong>Thanh Toán Khi Nhận Hàng</strong><br>
+                                Thanh toán bằng tiền mặt khi nhận sản phẩm
+                            </p>
+                            <a href="javascript:void(0)" onclick="goToStep(2)">Thay đổi</a>
+                        </div>
+
+                        <div class="review-section">
+                            <h3>Sản Phẩm</h3>
+                            <div style="font-size: 12px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span>Áo Blouse Lụa Cao Cấp x1</span>
+                                    <span>1.290.000 đ</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 10px;">
+                                    <span>Quần Jeans Ống Rộng x1</span>
+                                    <span>1.890.000 đ</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                    <span>Tổng Cộng:</span>
+                                    <span style="color: var(--primary-color);">3.180.000 đ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="confirmOrder()">Xác Nhận Đặt Hàng</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <aside class="checkout-summary">
+                <h3>Tóm Tắt Đơn Hàng</h3>
+
+                <div id="orderItems" style="font-size: 12px; margin-bottom: 20px;">
+                    <!-- Items will be loaded dynamically -->
+                </div>
+
+                <div style="border-top: 1px solid #ddd; padding-top: 12px; margin-bottom: 20px;">
+                    <div class="summary-row">
+                        <span>Tổng tiền hàng:</span>
+                        <span id="summarySubtotal">0 đ</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Giảm giá:</span>
+                        <span>0 đ</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Vận chuyển:</span>
+                        <span>Miễn phí</span>
+                    </div>
+                    <div class="summary-row total">
+                        <strong>Tổng cộng:</strong>
+                        <strong id="summaryTotal" style="color: var(--primary-color); font-size: 16px;">0 đ</strong>
+                    </div>
+                </div>
+
+                <a href="cart.html" style="display: block; text-align: center; color: var(--primary-color); text-decoration: none; font-size: 12px; font-weight: 600;">← Quay về giỏ hàng</a>
+            </aside>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER COMPONENT ==================== -->
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        let currentStep = 1;
+
+        function goToStep(step) {
+            // Update progress bar
+            for (let i = 1; i <= 3; i++) {
+                const stepElement = document.getElementById('step' + i);
+                const progressStep = document.querySelectorAll('.progress-step')[i - 1];
+                
+                if (i < step) {
+                    stepElement.classList.remove('active');
+                    progressStep.classList.remove('active');
+                    const stepNumber = progressStep.querySelector('.step-number');
+                    if (stepNumber) {
+                        stepNumber.classList.add('completed');
+                    }
+                } else if (i === step) {
+                    stepElement.classList.add('active');
+                    progressStep.classList.add('active');
+                    const stepNumber = progressStep.querySelector('.step-number');
+                    if (stepNumber) {
+                        stepNumber.classList.remove('completed');
+                        stepNumber.classList.add('active');
+                    }
+                } else {
+                    stepElement.classList.remove('active');
+                    progressStep.classList.remove('active');
+                    const stepNumber = progressStep.querySelector('.step-number');
+                    if (stepNumber) {
+                        stepNumber.classList.remove('completed');
+                        stepNumber.classList.remove('active');
+                    }
+                }
+            }
+            currentStep = step;
+            window.scrollTo(0, 0);
+        }
+
+        function confirmOrder() {
+            alert('Đơn hàng của bạn đã được đặt thành công!');
+            // Redirect to order confirmation page
+            // window.location.href = 'order-confirmation.html';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCommonComponents();
+            updateCartBadge();
+            updateHeaderAuth();
+        });
+    </script>
+</body>
+</html>

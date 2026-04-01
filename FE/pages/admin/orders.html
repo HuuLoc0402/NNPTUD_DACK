@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng - MARC Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/admin/unified.css">
+    <style>
+        body { background-color: #f5f5f5; }
+        
+        /* Badge styles to keep original colors */
+        .badge-success { background: #d4edda !important; color: #155724 !important; }
+        .badge-warning { background: #fff3cd !important; color: #856404 !important; }
+        .badge-danger { background: #f8d7da !important; color: #721c24 !important; }
+        .badge-info { background: #d1ecf1 !important; color: #0c5460 !important; }
+        
+        .order-details { display: grid; gap: 20px; }
+        .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .detail-item { padding: 15px; background: #F8F7F4; border-radius: 4px; }
+        .detail-item label { font-size: 12px; font-weight: 600; color: #666; display: block; margin-bottom: 5px; }
+        .detail-item p { font-size: 14px; font-weight: 600; color: #2C3E50; }
+        
+        .order-items { margin: 20px 0; border: 1px solid #E8E8E8; border-radius: 4px; overflow: hidden; }
+        .order-items table { width: 100%; margin: 0; }
+        .order-items th { background: #F8F7F4; padding: 10px; font-size: 12px; }
+        .order-items td { padding: 10px; }
+        
+        @media (max-width: 768px) {
+            .detail-row { grid-template-columns: 1fr; }
+        }
+    </style>
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-logo">MARC</div>
+            <ul class="admin-sidebar-menu">
+                <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> DASHBOARD</a></li>
+                <li><a href="products.html"><i class="fas fa-box"></i> SẢN PHẨM</a></li>
+                <li><a href="categories.html"><i class="fas fa-tags"></i> DANH MỤC</a></li>
+                <li><a href="orders.html" class="active"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
+                <li><hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);"></li>
+                <li><a href="../customer/index.html"><i class="fas fa-arrow-left"></i> VỀ TRANG CHỦ</a></li>
+                <li><a href="javascript:logout();"><i class="fas fa-sign-out-alt"></i> ĐĂNG XUẤT</a></li>
+            </ul>
+        </aside>
+
+        <div class="admin-main">
+            <div class="admin-header-section">
+                <h1>Quản Lý Đơn Hàng</h1>
+            </div>
+
+            <div class="card">
+                <div class="filters">
+                    <input type="text" id="searchOrder" placeholder="Tìm mã đơn..." onkeyup="filterOrders()">
+                    <select id="statusFilter" onchange="filterOrders()">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="pending">Chờ Xác Nhận</option>
+                        <option value="processing">Đang Xử Lý</option>
+                        <option value="shipped">Đã Gửi</option>
+                        <option value="delivered">Đã Giao</option>
+                        <option value="cancelled">Đã Hủy</option>
+                    </select>
+                    <input type="date" id="fromDate" onchange="filterOrders()">
+                    <input type="date" id="toDate" onchange="filterOrders()">
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Khách Hàng</th>
+                            <th>Điện Thoại</th>
+                            <th>Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Đặt</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#ORD001</td>
+                            <td>Nguyễn Văn A</td>
+                            <td>0901234567</td>
+                            <td>2.590.000₫</td>
+                            <td><span class="status-badge badge-success">Đã Giao</span></td>
+                            <td>01/04/2024</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewOrder(1)">Xem</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteOrder(1)">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#ORD002</td>
+                            <td>Trần Thị B</td>
+                            <td>0912345678</td>
+                            <td>1.890.000₫</td>
+                            <td><span class="status-badge badge-warning">Chờ Giao</span></td>
+                            <td>01/04/2024</td>
+                            <td>
+                                <button class="action-btn view" onclick="viewOrder(2)">Xem</button>
+                                <button class="action-btn delete" onclick="deleteOrder(2)">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#ORD003</td>
+                            <td>Lê Văn C</td>
+                            <td>0923456789</td>
+                            <td>3.120.000₫</td>
+                            <td><span class="status-badge badge-info">Chờ Xác Nhận</span></td>
+                            <td>31/03/2024</td>
+                            <td>
+                                <button class="action-btn view" onclick="viewOrder(3)">Xem</button>
+                                <button class="action-btn delete" onclick="deleteOrder(3)">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#ORD004</td>
+                            <td>Phạm Thị D</td>
+                            <td>0934567890</td>
+                            <td>950.000₫</td>
+                            <td><span class="status-badge badge-danger">Đã Hủy</span></td>
+                            <td>30/03/2024</td>
+                            <td>
+                                <button class="action-btn view" onclick="viewOrder(4)">Xem</button>
+                                <button class="action-btn delete" onclick="deleteOrder(4)">Xóa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#ORD005</td>
+                            <td>Hoàng Văn E</td>
+                            <td>0945678901</td>
+                            <td>2.150.000₫</td>
+                            <td><span class="status-badge badge-info">Chờ Xác Nhận</span></td>
+                            <td>29/03/2024</td>
+                            <td>
+                                <button class="action-btn view" onclick="viewOrder(5)">Xem</button>
+                                <button class="action-btn delete" onclick="deleteOrder(5)">Xóa</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    <button>1</button>
+                    <button>2</button>
+                    <button>3</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDER DETAIL MODAL -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Chi Tiết Đơn Hàng <span id="orderId"></span></h2>
+            </div>
+
+            <div class="order-details">
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <label>Tên Khách Hàng</label>
+                        <p id="customerName">-</p>
+                    </div>
+                    <div class="detail-item">
+                        <label>Email</label>
+                        <p id="customerEmail">-</p>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <label>Điện Thoại</label>
+                        <p id="customerPhone">-</p>
+                    </div>
+                    <div class="detail-item">
+                        <label>Trạng Thái Đơn Hàng</label>
+                        <p id="orderStatus">-</p>
+                    </div>
+                </div>
+
+                <div class="detail-item" style="grid-column: 1/-1;">
+                    <label>Địa Chỉ Giao</label>
+                    <p id="shippingAddress">-</p>
+                </div>
+
+                <div class="detail-item" style="grid-column: 1/-1;">
+                    <label>Ghi Chú</label>
+                    <p id="orderNote">Không có ghi chú</p>
+                </div>
+
+                <div class="order-items">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Số Lượng</th>
+                                <th>Giá</th>
+                                <th>Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Áo Blouse Lụa - Trắng (M)</td>
+                                <td>1</td>
+                                <td>1.290.000₫</td>
+                                <td>1.290.000₫</td>
+                            </tr>
+                            <tr>
+                                <td>Quần Jean Xanh - Size M</td>
+                                <td>1</td>
+                                <td>1.890.000₫</td>
+                                <td>1.890.000₫</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <label>Tiền Hàng</label>
+                        <p id="subtotal">-</p>
+                    </div>
+                    <div class="detail-item">
+                        <label>Phí Vận Chuyển</label>
+                        <p id="shipping">-</p>
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <label>Tổng Cộng</label>
+                    <p id="totalAmount" style="font-size: 18px; color: var(--primary);">-</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-close" onclick="closeOrderModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function viewOrder(id) {
+            document.getElementById('orderModal').classList.add('active');
+            // Load order data
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.remove('active');
+        }
+
+        function deleteOrder(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
+                alert(`Đã xóa đơn hàng #${id}`);
+            }
+        }
+
+        function filterOrders() {
+            console.log('Filtering orders...');
+        }
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                localStorage.removeItem('token');
+                window.location.href = '../auth/login.html';
+            }
+        }
+
+        document.getElementById('orderModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeOrderModal();
+            }
+        });
+    </script>
+</body>
+</html>

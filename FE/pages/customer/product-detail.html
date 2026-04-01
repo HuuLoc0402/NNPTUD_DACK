@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Sản Phẩm - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <style>
+        :root {
+            --primary-color: #DC3545;
+            --text-dark: #2C3E50;
+            --text-light: #7F8C8D;
+            --bg-light: #F8F7F4;
+            --accent-gold: #D4AF37;
+            --white: #FFFFFF;
+            --border-color: #E8E8E8;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-dark);
+            background-color: var(--bg-light);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Product Detail Page Styles */
+        .breadcrumb {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 40px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .product-detail-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        .detail-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            margin-bottom: 80px;
+        }
+
+        .product-images {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .main-image {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .main-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .badge-sale {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .thumbnails {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .thumbnail {
+            width: 80px;
+            height: 100px;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .thumbnail.active {
+            border-color: var(--primary-color);
+        }
+
+        .product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .product-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            color: var(--text-dark);
+            margin: 0 0 15px 0;
+            line-height: 1.2;
+        }
+
+        .rating-section {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .stars {
+            color: #FFD700;
+        }
+
+        .price-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .price-box {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .current-price {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .original-price {
+            font-size: 14px;
+            color: var(--text-light);
+            text-decoration: line-through;
+        }
+
+        .discount-percent {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .product-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-group label {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dark);
+        }
+
+        .size-selector,
+        .color-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .size-option,
+        .color-option {
+            padding: 10px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .size-option:hover,
+        .color-option:hover {
+            border-color: var(--primary-color);
+        }
+
+        .size-option.active,
+        .color-option.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .quantity-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .qty-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .qty-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        #quantityInput {
+            width: 60px;
+            height: 40px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .stock-info {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-left: auto;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 32px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #B82D3B;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--text-dark);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: var(--primary-color);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .product-benefits {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .benefit {
+            display: flex;
+            gap: 15px;
+        }
+
+        .benefit i {
+            font-size: 24px;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+
+        .benefit h4 {
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0 0 5px 0;
+            color: var(--text-dark);
+        }
+
+        .benefit p {
+            font-size: 11px;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        /* Tabs Section */
+        .product-tabs {
+            margin-bottom: 80px;
+            border-top: 1px solid #ddd;
+        }
+
+        .tabs-header {
+            display: flex;
+            gap: 40px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-btn {
+            padding: 20px 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-dark);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tabs-content {
+            padding: 40px 0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .specs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .specs-table tr {
+            border-bottom: 1px solid #eee;
+        }
+
+        .specs-table td {
+            padding: 15px 0;
+            font-size: 13px;
+        }
+
+        .specs-table td:first-child {
+            font-weight: 600;
+            color: var(--text-dark);
+            width: 200px;
+        }
+
+        /* Reviews Section */
+        .reviews-section {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .review-item {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .review-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .review-content {
+            flex: 1;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .review-author {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        .review-date {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .review-rating {
+            color: #FFD700;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .review-text {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-dark);
+        }
+
+        .review-form {
+            padding: 30px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .review-form h4 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 10px;
+            font-size: 20px;
+        }
+
+        .star-rating i {
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.3s ease;
+        }
+
+        .star-rating i:hover,
+        .star-rating i.active {
+            color: #FFD700;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        /* Related Products */
+        .related-products {
+            margin-bottom: 80px;
+        }
+
+        .related-products h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: var(--text-dark);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card-small {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+            transition: all 0.3s ease;
+        }
+
+        .product-card-small:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        }
+
+        .product-card-small .product-image {
+            width: 100%;
+            aspect-ratio: 3/4;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .product-card-small .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-card-small .product-info {
+            padding: 15px;
+        }
+
+        .product-card-small .product-name {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .product-card-small .product-price {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .detail-wrapper {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .product-benefits {
+                grid-template-columns: 1fr;
+            }
+
+            .product-actions {
+                flex-direction: column;
+            }
+
+            .tabs-header {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ==================== HEADER COMPONENT ==================== -->
+    <div id="header"></div>
+
+    <!-- ==================== BREADCRUMB ==================== -->
+    <div class="breadcrumb">
+        <a href="index.html">Trang chủ</a> / 
+        <a href="product-list.html">Sản phẩm</a> / 
+        <span id="breadcrumb-name">Chi tiết sản phẩm</span>
+    </div>
+
+    <!-- ==================== PRODUCT DETAIL ==================== -->
+    <div class="product-detail-container">
+        <div class="detail-wrapper">
+            <!-- Image Gallery -->
+            <div class="product-images">
+                <div class="main-image">
+                    <img id="mainImage" src="" alt="Product Image" style="background: #f5f5f5;">
+                    <span class="badge-sale" id="saleBadge" style="display: none;"></span>
+                </div>
+                <div class="thumbnails" id="thumbnailsContainer">
+                    <!-- Thumbnails will be loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Product Info -->
+            <div class="product-info">
+                <div class="product-header">
+                    <h1 id="productTitle">Đang tải...</h1>
+                    <div class="rating-section">
+                        <div class="stars"><i class="fas fa-star"></i> <i class="fas fa-star"></i> <i class="fas fa-star"></i> <i class="fas fa-star"></i> <i class="fas fa-star"></i></div>
+                        <span id="ratingCount">(0 đánh giá)</span>
+                        <span id="soldCount">0 đã bán</span>
+                    </div>
+                </div>
+
+                <div class="price-section">
+                    <div class="price-box">
+                        <span class="current-price" id="currentPrice">0 đ</span>
+                        <span class="original-price" id="originalPrice">1.290.000 đ</span>
+                        <span class="discount-percent" id="discountPercent">-30%</span>
+                    </div>
+                </div>
+
+                <div class="product-options">
+                    <div class="option-group">
+                        <label>Kích Cỡ</label>
+                        <div class="size-selector">
+                            <button class="size-option active">XS</button>
+                            <button class="size-option">S</button>
+                            <button class="size-option">M</button>
+                            <button class="size-option">L</button>
+                            <button class="size-option">XL</button>
+                            <button class="size-option">XXL</button>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <label>Màu Sắc</label>
+                        <div class="color-selector">
+                            <button class="color-option active" style="background: black; color: white;">Đen</button>
+                            <button class="color-option" style="background: white; color: black; border: 2px solid #ddd;">Trắng</button>
+                            <button class="color-option" style="background: #DC3545; color: white;">Đỏ</button>
+                            <button class="color-option" style="background: #0066cc; color: white;">Xanh</button>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <label>Số Lượng</label>
+                        <div class="quantity-selector">
+                            <button class="qty-btn" id="decreaseQty">−</button>
+                            <input type="number" id="quantityInput" value="1" min="1" readonly>
+                            <button class="qty-btn" id="increaseQty">+</button>
+                            <span class="stock-info">Còn 45 sản phẩm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-actions">
+                    <button class="btn btn-primary" id="addToCartBtn">
+                        <i class="fas fa-shopping-cart"></i> Thêm vào giỏ
+                    </button>
+                    <button class="btn btn-danger" id="buyNowBtn">
+                        <i class="fas fa-bolt"></i> Mua ngay
+                    </button>
+                    <button class="btn btn-outline" id="wishlistBtn">
+                        <i class="far fa-heart"></i> Yêu thích
+                    </button>
+                </div>
+
+                <div class="product-benefits">
+                    <div class="benefit">
+                        <i class="fas fa-truck"></i>
+                        <div>
+                            <h4>Miễn phí vận chuyển</h4>
+                            <p>Cho đơn hàng trên 500.000 đ</p>
+                        </div>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-undo"></i>
+                        <div>
+                            <h4>Đổi trả miễn phí</h4>
+                            <p>Trong vòng 30 ngày</p>
+                        </div>
+                    </div>
+                    <div class="benefit">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <h4>Thanh toán an toàn</h4>
+                            <p>Bảo mật 100%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Section -->
+        <div class="product-tabs">
+            <div class="tabs-header">
+                <button class="tab-btn active" data-tab="description">Mô Tả</button>
+                <button class="tab-btn" data-tab="specs">Thông Số</button>
+                <button class="tab-btn" data-tab="reviews">Đánh Giá</button>
+            </div>
+
+            <div class="tabs-content">
+                <div class="tab-content active" id="description">
+                    <h3>Mô Tả Sản Phẩm</h3>
+                    <p>Áo blouse lụa cao cấp được thiết kế từ những chất liệu tốt nhất, mang lại sự thoải mái và thanh lịch cho người mặc. Sản phẩm có thể dễ dàng phối hợp với nhiều loại quần áo khác nhau, thích hợp cho các bữa tiệc hay công việc hằng ngày.</p>
+                    <p style="margin-top: 15px;">Đặc điểm sản phẩm:</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Chất liệu lụa tự nhiên 100%</li>
+                        <li>Hàng chính hãng, được nhập khẩu trực tiếp</li>
+                        <li>Thiết kế hiện đại, phù hợp với các xu hướng thời trang 2024</li>
+                        <li>Bảo hành chất lượng 12 tháng</li>
+                        <li>Hỗ trợ đổi size miễn phí</li>
+                    </ul>
+                </div>
+
+                <div class="tab-content" id="specs">
+                    <h3>Thông Số Kỹ Thuật</h3>
+                    <table class="specs-table">
+                        <tr>
+                            <td>Chất Liệu</td>
+                            <td>Lụa tự nhiên 100%</td>
+                        </tr>
+                        <tr>
+                            <td>Kiểu Dáng</td>
+                            <td>Blouse cổ bẻ tay dài</td>
+                        </tr>
+                        <tr>
+                            <td>Màu Sắc</td>
+                            <td>Đen, Trắng, Đỏ, Xanh</td>
+                        </tr>
+                        <tr>
+                            <td>Kích Cỡ</td>
+                            <td>XS, S, M, L, XL, XXL</td>
+                        </tr>
+                        <tr>
+                            <td>Xuất Xứ</td>
+                            <td>Việt Nam</td>
+                        </tr>
+                        <tr>
+                            <td>Bảo Hành</td>
+                            <td>12 tháng</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="tab-content" id="reviews">
+                    <h3>Đánh Giá Từ Khách Hàng</h3>
+                    <div class="reviews-section">
+                        <div class="review-item">
+                            <div class="review-avatar">NT</div>
+                            <div class="review-content">
+                                <div class="review-header">
+                                    <span class="review-author">Nguyễn Thảo</span>
+                                    <span class="review-date">5 ngày trước</span>
+                                </div>
+                                <div class="review-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                <div class="review-text">Chất lượng sản phẩm rất tốt, vải mềm mại và bền. Màu sắc đúng như hình ảnh. Thanh toán và giao hàng nhanh chóng. Rất hài lòng!</div>
+                            </div>
+                        </div>
+
+                        <div class="review-item">
+                            <div class="review-avatar" style="background: #FF6B9D;">HN</div>
+                            <div class="review-content">
+                                <div class="review-header">
+                                    <span class="review-author">Hồng Nhân</span>
+                                    <span class="review-date">10 ngày trước</span>
+                                </div>
+                                <div class="review-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                                <div class="review-text">Tuyệt vời! Áo vừa vặn tôi, dễ chăm sóc. Giá cũng rất hợp lý. Sẽ tiếp tục mua ở cửa hàng này.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="review-form">
+                        <h4>Viết đánh giá của bạn</h4>
+                        <form id="submitReviewForm">
+                            <div class="form-group">
+                                <label>Đánh Giá</label>
+                                <div class="star-rating" id="starRating">
+                                    <i class="far fa-star" data-rating="1"></i>
+                                    <i class="far fa-star" data-rating="2"></i>
+                                    <i class="far fa-star" data-rating="3"></i>
+                                    <i class="far fa-star" data-rating="4"></i>
+                                    <i class="far fa-star" data-rating="5"></i>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Bình Luận</label>
+                                <textarea id="reviewText" placeholder="Chia sẻ trải nghiệm của bạn..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Gửi Đánh Giá</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Products -->
+        <section class="related-products">
+            <h2>Sản Phẩm Liên Quan</h2>
+            <div class="grid">
+                <div class="product-card-small">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250'%3E%3Crect fill='%23E8E8E8' width='200' height='250'/%3E%3C/svg%3E" alt="Product">
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Quần Jeans Ống Rộng</h3>
+                        <div class="product-price">1.890.000 đ</div>
+                    </div>
+                </div>
+
+                <div class="product-card-small">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250'%3E%3Crect fill='%23F0E8E8' width='200' height='250'/%3E%3C/svg%3E" alt="Product">
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Áo Thun Tay Dài Minimalist</h3>
+                        <div class="product-price">590.000 đ</div>
+                    </div>
+                </div>
+
+                <div class="product-card-small">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250'%3E%3Crect fill='%23E8F0F0' width='200' height='250'/%3E%3C/svg%3E" alt="Product">
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Váy Maxi Tơ Lụa Sang Trọng</h3>
+                        <div class="product-price">2.490.000 đ</div>
+                    </div>
+                </div>
+
+                <div class="product-card-small">
+                    <div class="product-image">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250'%3E%3Crect fill='%23F5E8E8' width='200' height='250'/%3E%3C/svg%3E" alt="Product">
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">Áo Cardigan Len Mềm</h3>
+                        <div class="product-price">1.690.000 đ</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ==================== FOOTER COMPONENT ==================== -->
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // Quantity selector
+        document.getElementById('increaseQty').addEventListener('click', function() {
+            const input = document.getElementById('quantityInput');
+            input.value = parseInt(input.value) + 1;
+        });
+
+        document.getElementById('decreaseQty').addEventListener('click', function() {
+            const input = document.getElementById('quantityInput');
+            if (parseInt(input.value) > 1) {
+                input.value = parseInt(input.value) - 1;
+            }
+        });
+
+        // Size options
+        document.querySelectorAll('.size-option').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.size-option').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Color options
+        document.querySelectorAll('.color-option').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Star rating
+        document.querySelectorAll('.star-rating i').forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = this.getAttribute('data-rating');
+                document.querySelectorAll('.star-rating i').forEach((s, idx) => {
+                    if (idx < rating) {
+                        s.classList.remove('far');
+                        s.classList.add('fas', 'active');
+                    } else {
+                        s.classList.remove('fas', 'active');
+                        s.classList.add('far');
+                    }
+                });
+            });
+        });
+
+        // Add to cart
+        document.getElementById('addToCartBtn').addEventListener('click', function() {
+            alert('Sản phẩm đã được thêm vào giỏ hàng!');
+            this.textContent = '✓ Đã thêm vào giỏ';
+            setTimeout(() => {
+                window.location.href = 'cart.html';
+            }, 1000);
+        });
+
+        // Wishlist
+        document.getElementById('wishlistBtn').addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (this.classList.contains('active')) {
+                this.innerHTML = '<i class="fas fa-heart"></i> Đã thêm yêu thích';
+            } else {
+                this.innerHTML = '<i class="far fa-heart"></i> Yêu thích';
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCommonComponents();
+            updateCartBadge();
+            updateHeaderAuth();
+        });
+    </script>
+</body>
+</html>

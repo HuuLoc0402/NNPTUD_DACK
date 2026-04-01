@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/admin/unified.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-logo"><i class="fas fa-crown"></i>MARC</div>
+            <ul class="admin-sidebar-menu">
+                <li><a href="dashboard.html" class="active"><i class="fas fa-chart-line"></i> DASHBOARD</a></li>
+                <li><a href="products.html"><i class="fas fa-box"></i> SẢN PHẨM</a></li>
+                <li><a href="categories.html"><i class="fas fa-tags"></i> DANH MỤC</a></li>
+                <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
+                <hr class="admin-sidebar-divider">
+                <li><a href="../customer/index.html"><i class="fas fa-arrow-left"></i> VỀ TRANG CHỦ</a></li>
+                <li><a href="javascript:logout();"><i class="fas fa-sign-out-alt"></i> ĐĂNG XUẤT</a></li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="admin-main">
+            <div class="admin-header-section">
+                <h1>Dashboard</h1>
+                <div class="admin-header-actions">
+                    <button class="btn btn-primary" onclick="goToProducts()">
+                        <i class="fas fa-plus"></i> Thêm Sản Phẩm
+                    </button>
+                    <i class="admin-header-icon fas fa-bell" onclick="toggleNotification()"></i>
+                </div>
+            </div>
+
+            <!-- STATS -->
+            <div class="stats-grid">
+                <div class="stat-card revenue">
+                    <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                    <div class="stat-content">
+                        <h3>Doanh Thu</h3>
+                        <div class="value">250.5M</div>
+                    </div>
+                </div>
+
+                <div class="stat-card orders">
+                    <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="stat-content">
+                        <h3>Đơn Hàng</h3>
+                        <div class="value">1,234</div>
+                    </div>
+                </div>
+
+                <div class="stat-card users">
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-content">
+                        <h3>Khách Hàng</h3>
+                        <div class="value">5,680</div>
+                    </div>
+                </div>
+
+                <div class="stat-card products">
+                    <div class="stat-icon"><i class="fas fa-box"></i></div>
+                    <div class="stat-content">
+                        <h3>Sản Phẩm</h3>
+                        <div class="value">342</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT ORDERS -->
+            <div class="card">
+                <h2 class="card-title">Đơn Hàng Gần Đây</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Khách Hàng</th>
+                            <th>Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Đặt</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>#ORD001</strong></td>
+                            <td>Nguyễn Văn A</td>
+                            <td>2.590.000₫</td>
+                            <td><span class="badge badge-success">Đã Giao</span></td>
+                            <td>01/04/2024</td>
+                            <td>
+                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Xem</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>#ORD002</strong></td>
+                            <td>Trần Thị B</td>
+                            <td>1.890.000₫</td>
+                            <td><span class="badge badge-warning">Chờ Giao</span></td>
+                            <td>01/04/2024</td>
+                            <td>
+                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Xem</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>#ORD003</strong></td>
+                            <td>Lê Văn C</td>
+                            <td>3.120.000₫</td>
+                            <td><span class="badge badge-info">Chờ Xác Nhận</span></td>
+                            <td>31/03/2024</td>
+                            <td>
+                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Xem</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TOP PRODUCTS -->
+            <div class="card">
+                <h2 class="card-title">Sản Phẩm Bán Chạy</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sản Phẩm</th>
+                            <th>SKU</th>
+                            <th>Giá</th>
+                            <th>Đã Bán</th>
+                            <th>Tồn Kho</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Áo Blouse Lụa</strong></td>
+                            <td>AB001</td>
+                            <td>1.290.000₫</td>
+                            <td>156</td>
+                            <td><span class="badge badge-success">45</span></td>
+                            <td>
+                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Sửa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Quần Jean Xanh</strong></td>
+                            <td>QJ001</td>
+                            <td>1.890.000₫</td>
+                            <td>128</td>
+                            <td><span class="badge badge-success">32</span></td>
+                            <td>
+                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Sửa</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Đầm Công Sở</strong></td>
+                            <td>DC001</td>
+                            <td>2.390.000₫</td>
+                            <td>89</td>
+                            <td><span class="badge badge-warning">8</span></td>
+                            <td>
+                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Sửa</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goToProducts() {
+            window.location.href = 'products.html';
+        }
+
+        function toggleNotification() {
+            alert('Thông báo: 5 đơn hàng chờ xác nhận');
+        }
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                // Remove all auth-related keys
+                localStorage.removeItem('marc_auth_token');
+                localStorage.removeItem('marc_refresh_token');
+                localStorage.removeItem('marc_user_info');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('userInfo');
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                
+                window.location.href = '../../pages/auth/login.html';
+            }
+        }
+
+        // Admin auth check - prevent infinite redirect loop
+        document.addEventListener('DOMContentLoaded', function() {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+            
+            if (!userInfo || !authToken) {
+                window.location.href = '../../pages/auth/login.html';
+                return;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                // Check if user is admin
+                if (user.role !== 'admin') {
+                    alert('Bạn không có quyền truy cập trang này!');
+                    window.location.href = '../../pages/customer/index.html';
+                }
+            } catch (error) {
+                console.error('Error parsing user info:', error);
+                window.location.href = '../../pages/auth/login.html';
+            }
+        });
+    </script>
+</body>
+</html>
