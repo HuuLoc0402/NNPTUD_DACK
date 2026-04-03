@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const cartController = require('../controllers/cartController');
 const orderController = require('../controllers/orderController');
 const { authenticate, adminOnly } = require('../middleware/auth');
+const { findMatchingVariant, getImagesForColor, normalizeColorName } = require('../utils/productVariant');
 
 const router = express.Router();
 
@@ -20,14 +21,12 @@ const buildShippingAddress = (shippingAddress = {}) => ({
 
 const buildOrderItem = (product, item) => {
   const size = item.selectedSize || item.size || 'M';
-  const color = item.selectedColor || item.color || 'default';
+  const color = normalizeColorName(item.selectedColor || item.color || 'Mac dinh');
   const quantity = Number(item.quantity || 1);
-  const variant = (product.variants || []).find((entry) => entry.size === size);
+  const variant = findMatchingVariant(product, { size, color });
   const price = variant?.price || product.finalPrice || product.price;
   const discount = product.discount || 0;
-  const image = Array.isArray(product.images) && product.images[0]?.url
-    ? product.images[0].url
-    : product.image || null;
+  const image = getImagesForColor(product, color)[0]?.url || product.image || null;
 
   return {
     product: product._id,

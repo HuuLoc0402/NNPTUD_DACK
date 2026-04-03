@@ -191,6 +191,7 @@ body {
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     display: flex;
     flex-direction: column;
+    cursor: pointer;
 }
 
 .product-card:hover {
@@ -316,6 +317,12 @@ body {
 
 .btn-wishlist:hover {
     color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-wishlist.active {
+    background: var(--primary-color);
+    color: white;
     border-color: var(--primary-color);
 }
 

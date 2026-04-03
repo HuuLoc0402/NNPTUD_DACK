@@ -108,17 +108,6 @@ async function handleRegisterSubmit(event) {
     }
 }
 
-function handleGoogleRegister() {
-    alert('Chức năng Google chưa được cấu hình ở backend.');
-}
-
-function handleFacebookRegister() {
-    alert('Chức năng Facebook chưa được cấu hình ở backend.');
-}
-
-window.handleGoogleRegister = handleGoogleRegister;
-window.handleFacebookRegister = handleFacebookRegister;
-
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');

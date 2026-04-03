@@ -105,7 +105,9 @@ window.AuthAPI = {
     register: (data) => window.apiClient.post('/auth/register', data),
     login: (data) => window.apiClient.post('/auth/login', data),
     logout: () => window.apiClient.post('/auth/logout', {}),
-    getProfile: () => window.apiClient.get('/auth/profile')
+    getProfile: () => window.apiClient.get('/auth/profile'),
+    updateProfile: (data) => window.apiClient.put('/auth/profile', data),
+    uploadProfileAvatar: (formData) => window.apiClient.postFormData('/auth/profile/avatar', formData)
 };
 
 window.ProductAPI = {
@@ -131,6 +133,20 @@ window.CartAPI = {
     addToCart: (data) => window.apiClient.post('/carts/add', data),
     updateCart: (data) => window.apiClient.put('/carts/update', data),
     clearCart: () => window.apiClient.delete('/carts/clear')
+};
+
+window.OrderAPI = {
+    getMyOrders: () => window.apiClient.get('/orders'),
+    getOrderDetail: (id) => window.apiClient.get(`/orders/${id}`),
+    cancelOrder: (id, data = {}) => window.apiClient.patch(`/orders/${id}/cancel`, data)
+};
+
+window.WishlistAPI = {
+    getMyWishlist: () => window.apiClient.get('/wishlist'),
+    addItem: (data) => window.apiClient.post('/wishlist/items', data),
+    syncItems: (items = []) => window.apiClient.post('/wishlist/sync', { items }),
+    removeItem: (productId) => window.apiClient.delete(`/wishlist/items/${productId}`),
+    clearWishlist: () => window.apiClient.delete('/wishlist/clear')
 };
 
 window.CommentAPI = {

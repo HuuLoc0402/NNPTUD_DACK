@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const cartController = require('../controllers/cartController');
 const productController = require('../controllers/productController');
 const { authenticate } = require('../middleware/auth');
+const { findMatchingVariant, normalizeColorName } = require('../utils/productVariant');
 
 const router = express.Router();
 
@@ -17,8 +18,8 @@ const formatCart = (cart) => {
   };
 };
 
-const resolveUnitPrice = (product, size) => {
-  const variant = (product.variants || []).find((item) => item.size === size);
+const resolveUnitPrice = (product, size, color) => {
+  const variant = findMatchingVariant(product, { size, color });
   return variant?.price || product.finalPrice || product.price;
 };
 
@@ -36,7 +37,7 @@ router.post('/add', authenticate, async (req, res, next) => {
     const productId = req.body.productId || req.body.product;
     const quantity = Number(req.body.quantity || 1);
     const selectedSize = req.body.size || req.body.selectedSize || 'M';
-    const selectedColor = req.body.color || req.body.selectedColor || 'default';
+    const selectedColor = normalizeColorName(req.body.color || req.body.selectedColor || 'Mac dinh');
     const product = await Product.findById(productId);
 
     if (!product) {
@@ -52,13 +53,14 @@ router.post('/add', authenticate, async (req, res, next) => {
 
     if (index >= 0) {
       cart.items[index].quantity += quantity;
+      cart.items[index].price = resolveUnitPrice(product, selectedSize, selectedColor);
     } else {
       cart.items.push({
         product: product._id,
         quantity,
         selectedSize,
         selectedColor,
-        price: resolveUnitPrice(product, selectedSize),
+        price: resolveUnitPrice(product, selectedSize, selectedColor),
         discount: product.discount || 0
       });
     }
@@ -75,7 +77,7 @@ router.put('/update', authenticate, async (req, res, next) => {
     const productId = req.body.productId || req.body.product;
     const quantity = Number(req.body.quantity || 1);
     const selectedSize = req.body.size || req.body.selectedSize || 'M';
-    const selectedColor = req.body.color || req.body.selectedColor || 'default';
+    const selectedColor = normalizeColorName(req.body.color || req.body.selectedColor || 'Mac dinh');
     const cart = await cartController.findOrCreateCart(req.userId);
     const item = cart.items.find((cartItem) =>
       String(cartItem.product) === String(productId)

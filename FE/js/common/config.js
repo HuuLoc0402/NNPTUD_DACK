@@ -100,6 +100,7 @@ const STORAGE_KEYS = {
     REFRESH_TOKEN: 'marc_refresh_token',
     USER_INFO: 'marc_user_info',
     CART: 'marc_cart',
+    WISHLIST: 'marc_wishlist',
     THEME: 'marc_theme'
 };
 

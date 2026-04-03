@@ -4,6 +4,7 @@ const authController = require('../controllers/authController');
 const EmailSender = require('../utils/emailSender');
 const TokenManager = require('../utils/tokenManager');
 const { authenticate } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const {
 	validateLogin,
 	validateRegister,
@@ -154,8 +155,40 @@ router.get('/profile', authenticate, async (req, res, next) => {
 	}
 });
 
+router.post('/profile/avatar', authenticate, upload.single('avatar'), async (req, res, next) => {
+	try {
+		if (req.userRole === 'admin') {
+			return res.status(403).json({ success: false, message: 'Tài khoản admin không chỉnh sửa hồ sơ tại đây' });
+		}
+
+		if (!req.file) {
+			return res.status(400).json({ success: false, message: 'Vui lòng chọn ảnh đại diện hợp lệ' });
+		}
+
+		const avatarPath = `/uploads/${req.file.filename}`;
+		const user = await authController.updateUserProfile(req.userId, { avatar: avatarPath });
+
+		if (!user) {
+			return res.status(404).json({ success: false, message: 'User not found' });
+		}
+
+		return res.status(200).json({
+			success: true,
+			message: 'Avatar updated successfully',
+			avatar: avatarPath,
+			user: user.toJSON()
+		});
+	} catch (error) {
+		next(error);
+	}
+});
+
 router.put('/profile', authenticate, async (req, res, next) => {
 	try {
+		if (req.userRole === 'admin') {
+			return res.status(403).json({ success: false, message: 'Tài khoản admin không chỉnh sửa hồ sơ tại đây' });
+		}
+
 		const { fullName, phone, address, avatar } = req.body;
 		const validation = validateProfileUpdate(fullName, phone, address);
 

@@ -16,6 +16,30 @@ function getStoredUser() {
     }
 }
 
+function storeUserInfo(user) {
+    if (!user) {
+        return;
+    }
+
+    localStorage.setItem(getStorageKey('USER_INFO', 'marc_user_info'), JSON.stringify(user));
+    localStorage.setItem('userInfo', JSON.stringify(user));
+}
+
+function getUserInitials(user) {
+    const name = String(user?.fullName || 'M').trim();
+    const tokens = name.split(/\s+/).filter(Boolean);
+    return tokens.slice(0, 2).map((token) => token.charAt(0).toUpperCase()).join('') || 'M';
+}
+
+function getUserAvatarMarkup(user) {
+    const avatarUrl = window.CONFIG?.resolveMediaUrl?.(user?.avatar, '') || '';
+    if (avatarUrl) {
+        return `<img src="${avatarUrl}" alt="${user?.fullName || 'Avatar'}" class="header-avatar-image">`;
+    }
+
+    return `<span class="header-avatar-fallback">${getUserInitials(user)}</span>`;
+}
+
 function getStoredCart() {
     const rawCart = localStorage.getItem(getStorageKey('CART', 'marc_cart')) || localStorage.getItem('cart');
     if (!rawCart) {
@@ -31,6 +55,197 @@ function getStoredCart() {
     } catch (error) {
         console.error('Invalid cart data in storage:', error);
         return [];
+    }
+}
+
+function getStoredWishlist() {
+    const rawWishlist = localStorage.getItem(getStorageKey('WISHLIST', 'marc_wishlist')) || localStorage.getItem('wishlist');
+    if (!rawWishlist) {
+        return [];
+    }
+
+    try {
+        const parsed = JSON.parse(rawWishlist);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Invalid wishlist data in storage:', error);
+        return [];
+    }
+}
+
+let wishlistSyncPromise = null;
+let hasHydratedWishlistFromServer = false;
+
+function persistWishlist(items) {
+    localStorage.setItem(getStorageKey('WISHLIST', 'marc_wishlist'), JSON.stringify(items));
+    localStorage.setItem('wishlist', JSON.stringify(items));
+    updateWishlistBadge();
+}
+
+function canSyncWishlistWithServer() {
+    return Boolean(window.apiClient?.isAuthenticated?.() && window.WishlistAPI);
+}
+
+async function syncWishlistFromServer(options = {}) {
+    const { mergeLocal = false, force = false } = options;
+
+    if (!canSyncWishlistWithServer()) {
+        return getStoredWishlist();
+    }
+
+    if (wishlistSyncPromise && !force) {
+        return wishlistSyncPromise;
+    }
+
+    wishlistSyncPromise = (async () => {
+        const localItems = getStoredWishlist();
+
+        if (mergeLocal && localItems.length) {
+            await window.WishlistAPI.syncItems(localItems);
+        }
+
+        const response = await window.WishlistAPI.getMyWishlist();
+        const serverItems = Array.isArray(response?.data) ? response.data : [];
+        persistWishlist(serverItems);
+        hasHydratedWishlistFromServer = true;
+        return serverItems;
+    })()
+        .catch((error) => {
+            console.error('Wishlist sync error:', error);
+            return getStoredWishlist();
+        })
+        .finally(() => {
+            wishlistSyncPromise = null;
+        });
+
+    return wishlistSyncPromise;
+}
+
+function updateWishlistBadge() {
+    const badge = document.getElementById('wishlist-badge');
+    if (!badge) {
+        return;
+    }
+
+    const items = getStoredWishlist();
+    badge.textContent = String(items.length);
+    badge.style.display = items.length > 0 ? 'inline-flex' : 'none';
+}
+
+function normalizeWishlistItem(product) {
+    return {
+        productId: product.productId || product._id,
+        slug: product.slug || product.productId || product._id,
+        name: product.name || 'Sản phẩm',
+        image: product.image || '',
+        price: Number(product.price || 0),
+        originalPrice: Number(product.originalPrice || product.price || 0),
+        size: product.size || 'M',
+        color: product.color || 'Mặc định',
+        addedAt: product.addedAt || new Date().toISOString()
+    };
+}
+
+function isProductWishlisted(productId) {
+    return getStoredWishlist().some((item) => String(item.productId) === String(productId));
+}
+
+function toggleWishlistItem(product) {
+    const normalizedItem = normalizeWishlistItem(product);
+    const wishlist = getStoredWishlist();
+    const previousWishlist = [...wishlist];
+    const existingIndex = wishlist.findIndex((item) => String(item.productId) === String(normalizedItem.productId));
+
+    if (existingIndex >= 0) {
+        wishlist.splice(existingIndex, 1);
+        persistWishlist(wishlist);
+        if (canSyncWishlistWithServer()) {
+            window.WishlistAPI.removeItem(normalizedItem.productId)
+                .then((response) => {
+                    if (Array.isArray(response?.data)) {
+                        persistWishlist(response.data);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Cannot remove wishlist item from server:', error);
+                    persistWishlist(previousWishlist);
+                });
+        }
+        return { active: false, items: wishlist };
+    }
+
+    wishlist.unshift(normalizedItem);
+    persistWishlist(wishlist);
+    if (canSyncWishlistWithServer()) {
+        window.WishlistAPI.addItem(normalizedItem)
+            .then((response) => {
+                if (Array.isArray(response?.data)) {
+                    persistWishlist(response.data);
+                }
+            })
+            .catch((error) => {
+                console.error('Cannot add wishlist item to server:', error);
+                persistWishlist(previousWishlist);
+            });
+    }
+    return { active: true, items: wishlist };
+}
+
+function removeWishlistItem(productId) {
+    const previousWishlist = getStoredWishlist();
+    const wishlist = previousWishlist.filter((item) => String(item.productId) !== String(productId));
+    persistWishlist(wishlist);
+
+    if (canSyncWishlistWithServer()) {
+        window.WishlistAPI.removeItem(productId)
+            .then((response) => {
+                if (Array.isArray(response?.data)) {
+                    persistWishlist(response.data);
+                }
+            })
+            .catch((error) => {
+                console.error('Cannot remove wishlist item from server:', error);
+                persistWishlist(previousWishlist);
+            });
+    }
+
+    return wishlist;
+}
+
+function clearWishlist() {
+    const previousWishlist = getStoredWishlist();
+    persistWishlist([]);
+
+    if (canSyncWishlistWithServer()) {
+        window.WishlistAPI.clearWishlist()
+            .then(() => {
+                persistWishlist([]);
+            })
+            .catch((error) => {
+                console.error('Cannot clear wishlist on server:', error);
+                persistWishlist(previousWishlist);
+            });
+    }
+}
+
+function setWishlistButtonState(button, isActive, options = {}) {
+    if (!button) {
+        return;
+    }
+
+    const icon = button.querySelector('i');
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+
+    if (icon) {
+        icon.classList.toggle('far', !isActive);
+        icon.classList.toggle('fas', isActive);
+    }
+
+    if (options.textMode) {
+        button.innerHTML = isActive
+            ? '<i class="fas fa-heart"></i> Đã thêm yêu thích'
+            : '<i class="far fa-heart"></i> Yêu thích';
     }
 }
 
@@ -58,7 +273,37 @@ function updateHeaderAuth() {
         return;
     }
 
-    authContainer.innerHTML = `<span class="header-user">${user.fullName || 'Tài khoản'}</span><button id="logoutBtn" class="header-logout-btn">Đăng xuất</button>`;
+    if (user.role === 'admin') {
+        authContainer.innerHTML = `
+            <div class="header-account">
+                <button type="button" class="header-account-trigger">
+                    <span class="header-avatar">${getUserAvatarMarkup(user)}</span>
+                    <span class="header-user">${user.fullName || 'Admin'}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="header-account-menu">
+                    <a href="../admin/dashboard.html" class="header-account-link">Trang quản trị</a>
+                </div>
+            </div>
+            <button id="logoutBtn" class="header-logout-btn header-logout-inline">Đăng xuất</button>
+        `;
+    } else {
+        authContainer.innerHTML = `
+            <div class="header-account">
+                <button type="button" class="header-account-trigger">
+                    <span class="header-avatar">${getUserAvatarMarkup(user)}</span>
+                    <span class="header-user">${user.fullName || 'Tài khoản'}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="header-account-menu">
+                    <a href="profile.html" class="header-account-link">Hồ sơ cá nhân</a>
+                    <a href="order-history.html" class="header-account-link">Lịch sử đơn hàng</a>
+                </div>
+            </div>
+            <button id="logoutBtn" class="header-logout-btn header-logout-inline" aria-label="Đăng xuất"><i class="fas fa-right-from-bracket"></i></button>
+        `;
+    }
+
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
@@ -79,6 +324,9 @@ function clearAuthStorage() {
     localStorage.removeItem('userInfo');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem(getStorageKey('WISHLIST', 'marc_wishlist'));
+    localStorage.removeItem('wishlist');
+    hasHydratedWishlistFromServer = false;
 }
 
 function redirectToLogin() {
@@ -105,10 +353,25 @@ async function logout(event) {
 
 window.addEventListener('pageshow', function() {
     updateCartBadge();
+    updateWishlistBadge();
     updateHeaderAuth();
+
+    if (canSyncWishlistWithServer()) {
+        syncWishlistFromServer({ mergeLocal: !hasHydratedWishlistFromServer });
+    }
 });
 
 window.updateCartBadge = updateCartBadge;
+window.getStoredWishlist = getStoredWishlist;
+window.updateWishlistBadge = updateWishlistBadge;
+window.isProductWishlisted = isProductWishlisted;
+window.toggleWishlistItem = toggleWishlistItem;
+window.removeWishlistItem = removeWishlistItem;
+window.clearWishlist = clearWishlist;
+window.setWishlistButtonState = setWishlistButtonState;
+window.syncWishlistFromServer = syncWishlistFromServer;
+window.getStoredUser = getStoredUser;
+window.storeUserInfo = storeUserInfo;
 window.updateHeaderAuth = updateHeaderAuth;
 window.clearAuthStorage = clearAuthStorage;
 window.logout = logout;

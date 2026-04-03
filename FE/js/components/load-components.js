@@ -29,6 +29,10 @@ function initializeHeader() {
     if (typeof window.updateCartBadge === 'function') {
         window.updateCartBadge();
     }
+
+    if (typeof window.updateWishlistBadge === 'function') {
+        window.updateWishlistBadge();
+    }
 }
 
 function initializeComponent(componentId) {

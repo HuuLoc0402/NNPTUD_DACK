@@ -18,12 +18,23 @@
             --border-color: #E8E8E8;
         }
 
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f7f0eb 0%, #f1ece6 100%);
+        }
+
         .auth-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 0;
             min-height: 100vh;
-            margin-top: -60px;
+            padding: 24px;
+            align-items: stretch;
+        }
+
+        .auth-container > div {
+            min-height: calc(100vh - 48px);
         }
 
         .auth-image {
@@ -38,6 +49,8 @@
             color: white;
             padding: 40px;
             text-align: center;
+            border-radius: 28px 0 0 28px;
+            overflow: hidden;
         }
 
         .auth-image h2 {
@@ -62,12 +75,15 @@
             padding: 40px;
             background: var(--white);
             overflow-y: auto;
-            max-height: 100vh;
+            max-height: calc(100vh - 48px);
+            border-radius: 0 28px 28px 0;
+            box-shadow: 0 26px 80px rgba(0, 0, 0, 0.12);
         }
 
         .auth-form-wrapper {
             width: 100%;
             max-width: 400px;
+            padding: 20px 0;
         }
 
         .back-home-link {
@@ -209,52 +225,6 @@
             box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
-            gap: 12px;
-            color: var(--text-light);
-            font-size: 12px;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border-color);
-        }
-
-        .social-login {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .social-btn {
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            background: var(--white);
-            color: var(--text-dark);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .social-btn:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-            background: rgba(220, 53, 69, 0.05);
-        }
-
         .auth-footer {
             text-align: center;
             font-size: 13px;
@@ -290,6 +260,7 @@
         @media (max-width: 768px) {
             .auth-container {
                 grid-template-columns: 1fr;
+                padding: 16px;
             }
 
             .auth-image {
@@ -298,6 +269,9 @@
 
             .auth-form-container {
                 padding: 20px;
+                border-radius: 24px;
+                min-height: calc(100vh - 32px);
+                max-height: none;
             }
 
             .auth-form-title {
@@ -361,17 +335,6 @@
 
                     <button type="submit" class="btn-register">Đăng Ký</button>
                 </form>
-
-                <div class="divider">hoặc</div>
-
-                <div class="social-login">
-                    <button type="button" class="social-btn" onclick="handleGoogleRegister()">
-                        <i class="fab fa-google"></i> Google
-                    </button>
-                    <button type="button" class="social-btn" onclick="handleFacebookRegister()">
-                        <i class="fab fa-facebook"></i> Facebook
-                    </button>
-                </div>
 
                 <div class="auth-footer">
                     Đã có tài khoản? <a href="login.html">Đăng nhập</a>

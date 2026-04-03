@@ -101,16 +101,19 @@
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
     <script src="../../js/components/load-components.js"></script>
     <script src="../../js/shared.js"></script>
     <script>
         let currentSlide = 0;
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             loadCommonComponents();
             updateCartBadge();
+            updateWishlistBadge();
             updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
             loadCategories();
             loadHomepageProducts();
             setupProductInteractions();
@@ -196,6 +199,36 @@
             return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
         }
 
+        function getDefaultVariant(product) {
+            if (product?.defaultVariant) {
+                return product.defaultVariant;
+            }
+
+            if (Array.isArray(product?.variants) && product.variants.length) {
+                return product.variants[0];
+            }
+
+            return {
+                size: Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M',
+                color: Array.isArray(product?.colors) && product.colors.length ? product.colors[0] : 'Mặc định',
+                finalPrice: Number(product?.currentPrice || product?.price || 0)
+            };
+        }
+
+        function buildWishlistPayload(product) {
+            const defaultVariant = getDefaultVariant(product);
+            return {
+                productId: product._id,
+                slug: product.slug || product._id,
+                name: product.name,
+                image: resolveProductImage(product),
+                price: Number(defaultVariant.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
+                originalPrice: Number(product.minPrice || product.price || product.currentPrice || 0),
+                size: defaultVariant.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
+                color: defaultVariant.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
+            };
+        }
+
         function renderHomepageProducts(products) {
             const grid = document.getElementById('productsGrid');
 
@@ -206,10 +239,15 @@
 
             grid.innerHTML = products.map(product => {
                 const imageUrl = resolveProductImage(product);
-                const currentPrice = Number(product.currentPrice || product.price || 0);
-                const originalPrice = Number(product.price || currentPrice);
+                const defaultVariant = getDefaultVariant(product);
+                const currentPrice = Number(product.minCurrentPrice || defaultVariant.finalPrice || product.currentPrice || product.price || 0);
+                const maxCurrentPrice = Number(product.maxCurrentPrice || currentPrice);
+                const originalPrice = Number(product.minPrice || product.price || currentPrice);
                 const showDiscount = originalPrice > currentPrice;
                 const discountText = Number(product.discount || 0) > 0 ? `-${Math.round(Number(product.discount))}%` : 'Sale';
+                const priceLabel = maxCurrentPrice > currentPrice
+                    ? `Từ ${formatCurrency(currentPrice)}`
+                    : formatCurrency(currentPrice);
 
                 return `
                     <article class="product-card" onclick="openProductDetail('${product.slug || product._id}')">
@@ -220,7 +258,7 @@
                         <div class="product-info">
                             <h3 class="product-name">${product.name}</h3>
                             <div class="product-price">
-                                <span>${formatCurrency(currentPrice)}</span>
+                                <span>${priceLabel}</span>
                                 ${showDiscount ? `<span class="original-price">${formatCurrency(originalPrice)}</span>` : ''}
                             </div>
                             <div class="product-action">
@@ -228,13 +266,13 @@
                                     _id: product._id,
                                     slug: product.slug,
                                     name: product.name,
-                                    price: currentPrice,
+                                    price: Number(defaultVariant.finalPrice || currentPrice),
                                     image: imageUrl,
-                                    size: Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M',
-                                    color: Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định'
+                                    size: defaultVariant.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
+                                    color: defaultVariant.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
                                 }).replace(/'/g, '&apos;')}' onclick="event.stopPropagation()">Thêm Vào Giỏ</button>
-                                <button class="btn-wishlist" type="button" onclick="event.stopPropagation()" aria-label="Yêu thích">
-                                    <i class="far fa-heart"></i>
+                                <button class="btn-wishlist ${window.isProductWishlisted?.(product._id) ? 'active' : ''}" type="button" data-product='${JSON.stringify(buildWishlistPayload(product)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation()" aria-label="Yêu thích">
+                                    <i class="${window.isProductWishlisted?.(product._id) ? 'fas' : 'far'} fa-heart"></i>
                                 </button>
                             </div>
                         </div>
@@ -293,10 +331,9 @@
                 }
 
                 if (wishlistButton) {
-                    const icon = wishlistButton.querySelector('i');
-                    icon.classList.toggle('far');
-                    icon.classList.toggle('fas');
-                    wishlistButton.style.color = icon.classList.contains('fas') ? '#DC3545' : '';
+                    const product = JSON.parse(wishlistButton.dataset.product.replace(/&apos;/g, "'"));
+                    const result = window.toggleWishlistItem(product);
+                    window.setWishlistButtonState(wishlistButton, result.active);
                 }
             });
         }
@@ -339,6 +376,7 @@
 
         // Auto-play slider every 5 seconds
         setInterval(nextSlide, 5000);
+
     </script>
 </body>
 </html>

@@ -55,6 +55,14 @@
                 </div>
 
                 <div class="product-options">
+                    <div class="option-group" id="colorOptionGroup">
+                        <label>Màu Sắc</label>
+                        <div class="color-selection-header">
+                            <span class="selected-color-label" id="selectedColorLabel">Đang cập nhật</span>
+                        </div>
+                        <div class="color-selector" id="colorSelector"></div>
+                    </div>
+
                     <div class="option-group">
                         <label>Kích Cỡ</label>
                         <div class="size-selector" id="sizeSelector">
@@ -221,16 +229,149 @@
     <script src="../../js/shared.js"></script>
     <script>
         let currentProduct = null;
-        let selectedSize = 'M';
-        let selectedColor = 'Mặc định';
+        let selectedSize = '';
+        let selectedColor = '';
         let selectedRating = 0;
 
         function getUrlParameter(param) {
             return new URLSearchParams(window.location.search).get(param);
         }
 
+        function normalizeColorName(value) {
+            return String(value || '').trim() || 'Mặc định';
+        }
+
         function getProductImages(product) {
             return window.CONFIG?.resolveProductImages(product, '../../assets/images/banner1.png') || ['../../assets/images/banner1.png'];
+        }
+
+        function getImageUrl(value) {
+            return window.CONFIG?.resolveMediaUrl(value, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function getNormalizedImages(product) {
+            if (!Array.isArray(product?.images) || !product.images.length) {
+                return (product?.image ? [{ url: product.image, color: null, isPrimary: true }] : []).filter(Boolean);
+            }
+
+            return product.images.map((item, index) => {
+                if (typeof item === 'string') {
+                    return { url: item, color: null, isPrimary: index === 0 };
+                }
+
+                return {
+                    url: item.url,
+                    color: item.color ? normalizeColorName(item.color) : null,
+                    alt: item.alt || '',
+                    isPrimary: Boolean(item.isPrimary) || index === 0
+                };
+            }).filter((item) => item.url);
+        }
+
+        function getColorOptions(product) {
+            if (Array.isArray(product?.colorOptions) && product.colorOptions.length) {
+                return product.colorOptions.map((item) => ({
+                    name: normalizeColorName(item.name),
+                    code: item.code || '#D9D9D9'
+                }));
+            }
+
+            const fallbackColors = Array.isArray(product?.colors) && product.colors.length
+                ? product.colors
+                : ['Mặc định'];
+            return fallbackColors.map((item) => ({ name: normalizeColorName(item), code: '#D9D9D9' }));
+        }
+
+        function getProductVariants(product) {
+            if (Array.isArray(product?.variants) && product.variants.length) {
+                return product.variants.map((variant) => ({
+                    ...variant,
+                    color: normalizeColorName(variant.color),
+                    finalPrice: Number(variant.finalPrice ?? variant.price ?? 0)
+                }));
+            }
+
+            return [{
+                color: getColorOptions(product)[0]?.name || 'Mặc định',
+                colorCode: getColorOptions(product)[0]?.code || '#D9D9D9',
+                size: Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M',
+                price: Number(product?.minPrice || product?.price || 0),
+                stock: Number(product?.stock || 0),
+                finalPrice: Number(product?.currentPrice || product?.price || 0),
+                sku: product?.sku || null
+            }];
+        }
+
+        function getMatchingVariant(product, color, size) {
+            const variants = getProductVariants(product);
+            const normalizedColor = normalizeColorName(color);
+
+            return variants.find((variant) => variant.size === size && normalizeColorName(variant.color) === normalizedColor)
+                || variants.find((variant) => normalizeColorName(variant.color) === normalizedColor)
+                || variants.find((variant) => variant.size === size)
+                || variants[0]
+                || null;
+        }
+
+        function buildWishlistPayloadFromCurrent() {
+            const variant = currentProduct ? getMatchingVariant(currentProduct, selectedColor, selectedSize) : null;
+            return {
+                productId: currentProduct?._id,
+                slug: currentProduct?.slug || currentProduct?._id,
+                name: currentProduct?.name,
+                image: getImagesForColor(currentProduct, selectedColor)[0] || getProductImages(currentProduct)[0],
+                price: Number(variant?.finalPrice ?? currentProduct?.currentPrice ?? currentProduct?.price ?? 0),
+                originalPrice: Number(variant?.price ?? currentProduct?.minPrice ?? currentProduct?.price ?? 0),
+                size: selectedSize,
+                color: selectedColor
+            };
+        }
+
+        function buildWishlistPayload(product) {
+            const variant = getMatchingVariant(product, product?.defaultVariant?.color, product?.defaultVariant?.size);
+            return {
+                productId: product?._id,
+                slug: product?.slug || product?._id,
+                name: product?.name,
+                image: getImagesForColor(product, variant?.color || product?.defaultVariant?.color || product?.colors?.[0])[0] || getProductImages(product)[0],
+                price: Number(variant?.finalPrice ?? product?.minCurrentPrice ?? product?.currentPrice ?? product?.price ?? 0),
+                originalPrice: Number(variant?.price ?? product?.minPrice ?? product?.price ?? 0),
+                size: variant?.size || (Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
+                color: variant?.color || (Array.isArray(product?.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
+            };
+        }
+
+        function refreshWishlistButton() {
+            const wishlistButton = document.getElementById('wishlistBtn');
+            if (!wishlistButton || !currentProduct) {
+                return;
+            }
+
+            window.setWishlistButtonState(wishlistButton, window.isProductWishlisted(currentProduct._id), { textMode: true });
+        }
+
+        function getAvailableSizesForColor(product, color) {
+            const normalizedColor = normalizeColorName(color);
+            const sizes = getProductVariants(product)
+                .filter((variant) => normalizeColorName(variant.color) === normalizedColor)
+                .map((variant) => variant.size)
+                .filter(Boolean);
+
+            return sizes.length ? sizes : (product.sizes || ['M']);
+        }
+
+        function getImagesForColor(product, color) {
+            const images = getNormalizedImages(product);
+            if (!images.length) {
+                return getProductImages(product);
+            }
+
+            const normalizedColor = normalizeColorName(color);
+            const matching = images.filter((item) => normalizeColorName(item.color) === normalizedColor);
+            const shared = images.filter((item) => !item.color);
+            const displayImages = matching.length ? [...matching, ...shared] : images;
+
+            return displayImages.map((item) => getImageUrl(item.url)).filter(Boolean);
         }
 
         function formatCurrency(value) {
@@ -306,25 +447,111 @@
             return parts.slice(0, 2).map((item) => item.charAt(0).toUpperCase()).join('') || 'KH';
         }
 
-        function renderOptionButtons(containerId, values) {
-            const container = document.getElementById(containerId);
-            const safeValues = values.length > 0 ? values : ['M'];
-            const activeValue = selectedSize;
+        function renderColorOptions(product) {
+            const container = document.getElementById('colorSelector');
+            const label = document.getElementById('selectedColorLabel');
+            const colorOptions = getColorOptions(product);
 
-            container.innerHTML = safeValues.map((value, index) => {
-                const isActive = value === activeValue || (!activeValue && index === 0);
-                return `<button class="size-option ${isActive ? 'active' : ''}" type="button" data-value="${value}">${value}</button>`;
+            if (!selectedColor) {
+                selectedColor = colorOptions[0]?.name || 'Mặc định';
+            }
+
+            label.textContent = selectedColor;
+            container.innerHTML = colorOptions.map((option) => `
+                <button class="color-option ${normalizeColorName(option.name) === normalizeColorName(selectedColor) ? 'active' : ''}" type="button" data-color="${escapeHtml(option.name)}">
+                    <span class="color-swatch" style="background:${escapeHtml(option.code || '#D9D9D9')}"></span>
+                    <span class="color-name">${escapeHtml(option.name)}</span>
+                </button>
+            `).join('');
+
+            container.querySelectorAll('.color-option').forEach((button) => {
+                button.addEventListener('click', function() {
+                    selectedColor = this.dataset.color;
+                    const availableSizes = getAvailableSizesForColor(product, selectedColor);
+                    if (!availableSizes.includes(selectedSize)) {
+                        selectedSize = availableSizes[0] || 'M';
+                    }
+                    syncSelectedVariant(product);
+                });
+            });
+        }
+
+        function renderSizeOptions(product) {
+            const container = document.getElementById('sizeSelector');
+            const availableSizes = getAvailableSizesForColor(product, selectedColor);
+            const allSizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : availableSizes;
+
+            if (!availableSizes.includes(selectedSize)) {
+                selectedSize = availableSizes[0] || allSizes[0] || 'M';
+            }
+
+            container.innerHTML = allSizes.map((value) => {
+                const isAvailable = availableSizes.includes(value);
+                const isActive = value === selectedSize;
+                return `<button class="size-option ${isActive ? 'active' : ''} ${isAvailable ? '' : 'is-disabled'}" type="button" data-value="${value}" ${isAvailable ? '' : 'disabled'}>${value}</button>`;
             }).join('');
-
-            selectedSize = safeValues.includes(activeValue) ? activeValue : safeValues[0];
 
             container.querySelectorAll('.size-option').forEach((button) => {
                 button.addEventListener('click', function() {
-                    container.querySelectorAll('.size-option').forEach((item) => item.classList.remove('active'));
-                    this.classList.add('active');
+                    if (this.disabled) {
+                        return;
+                    }
+
                     selectedSize = this.dataset.value;
+                    syncSelectedVariant(product);
                 });
             });
+        }
+
+        function updatePriceAndStock(product, variant) {
+            const variantPrice = Number(variant?.price ?? product.minPrice ?? product.price ?? 0);
+            const currentVariantPrice = Number(variant?.finalPrice ?? (variantPrice * (1 - Number(product.discount || 0) / 100)));
+            const currentPriceElement = document.getElementById('currentPrice');
+            const originalPriceElement = document.getElementById('originalPrice');
+            const discountElement = document.getElementById('discountPercent');
+            const saleBadge = document.getElementById('saleBadge');
+            const stock = Number(variant?.stock ?? product.stock ?? 0);
+            const discount = Number(product.discount || 0);
+
+            currentPriceElement.textContent = formatCurrency(currentVariantPrice);
+
+            if (discount > 0 && variantPrice > currentVariantPrice) {
+                originalPriceElement.textContent = formatCurrency(variantPrice);
+                originalPriceElement.style.display = 'inline';
+                discountElement.textContent = `-${discount}%`;
+                discountElement.style.display = 'inline-flex';
+                saleBadge.textContent = `-${discount}%`;
+                saleBadge.style.display = 'inline-flex';
+            } else {
+                originalPriceElement.style.display = 'none';
+                discountElement.style.display = 'none';
+                saleBadge.style.display = 'none';
+            }
+
+            document.getElementById('stockInfo').textContent = `Còn ${stock} sản phẩm`;
+
+            const quantityInput = document.getElementById('quantityInput');
+            const currentQuantity = Number(quantityInput.value || 1);
+            quantityInput.value = Math.max(1, Math.min(currentQuantity, Math.max(stock, 1)));
+
+            document.getElementById('addToCartBtn').disabled = stock <= 0;
+            document.getElementById('buyNowBtn').disabled = stock <= 0;
+        }
+
+        function syncSelectedVariant(product) {
+            const variant = getMatchingVariant(product, selectedColor, selectedSize);
+            if (!variant) {
+                return;
+            }
+
+            selectedColor = normalizeColorName(variant.color || selectedColor);
+            selectedSize = variant.size || selectedSize || 'M';
+
+            renderColorOptions(product);
+            renderSizeOptions(product);
+            updatePriceAndStock(product, variant);
+            renderImageGallery(getImagesForColor(product, selectedColor));
+            refreshWishlistButton();
         }
 
         function renderSizeChart(rows, availableSizes, note) {
@@ -360,8 +587,9 @@
 
             const highlights = [
                 `Danh mục: ${product.categoryName || 'Đang cập nhật'}`,
-                `Giá hiện tại: ${formatCurrency(product.currentPrice || product.price || 0)}`,
+                `Giá hiện tại: ${formatCurrency(product.minCurrentPrice || product.currentPrice || product.price || 0)}`,
                 `Kích cỡ có sẵn: ${(product.sizes || []).join(', ') || 'M'}`,
+                `Màu sắc: ${(product.colors || []).join(', ') || 'Mặc định'}`,
                 `Số lượng tồn: ${product.stock || 0}`
             ];
 
@@ -493,6 +721,9 @@
                         <div class="product-info">
                             <h3 class="product-name">${item.name}</h3>
                             <div class="product-price">${formatCurrency(item.currentPrice || item.price || 0)}</div>
+                            <button class="related-wishlist ${window.isProductWishlisted?.(item._id) ? 'active' : ''}" type="button" data-product='${JSON.stringify(buildWishlistPayload(item)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation()">
+                                <i class="${window.isProductWishlisted?.(item._id) ? 'fas' : 'far'} fa-heart"></i>
+                            </button>
                         </div>
                     </article>
                 `).join('');
@@ -510,17 +741,21 @@
             const storageKey = window.CONFIG?.STORAGE_KEYS?.CART || 'marc_cart';
             const cart = JSON.parse(localStorage.getItem(storageKey) || '[]');
             const quantity = Number(document.getElementById('quantityInput').value || 1);
-            const image = getProductImages(currentProduct)[0];
             const existingItem = cart.find((item) => item.productId === currentProduct._id && item.size === selectedSize && item.color === selectedColor);
+            const variant = getMatchingVariant(currentProduct, selectedColor, selectedSize);
+            const image = getImagesForColor(currentProduct, selectedColor)[0] || getProductImages(currentProduct)[0];
+            const unitPrice = Number(variant?.finalPrice ?? currentProduct.currentPrice ?? currentProduct.price ?? 0);
 
             if (existingItem) {
                 existingItem.quantity += quantity;
+                existingItem.price = unitPrice;
+                existingItem.image = image;
             } else {
                 cart.push({
                     productId: currentProduct._id,
                     slug: currentProduct.slug,
                     name: currentProduct.name,
-                    price: Number(currentProduct.currentPrice || currentProduct.price || 0),
+                    price: unitPrice,
                     image,
                     quantity,
                     size: selectedSize,
@@ -563,35 +798,9 @@
                 document.getElementById('soldCount').textContent = `${product.views || 0} lượt xem`;
                 document.querySelector('.rating-section .stars').innerHTML = renderStars(product.rating || product.ratingAverage || 0);
 
-                const currentPrice = Number(product.currentPrice || product.price || 0);
-                const originalPrice = Number(product.price || currentPrice);
-                document.getElementById('currentPrice').textContent = formatCurrency(currentPrice);
-
-                const originalPriceElement = document.getElementById('originalPrice');
-                const discountElement = document.getElementById('discountPercent');
-                const saleBadge = document.getElementById('saleBadge');
-                if (originalPrice > currentPrice) {
-                    originalPriceElement.textContent = formatCurrency(originalPrice);
-                    originalPriceElement.style.display = 'inline';
-                    const discount = Number(product.discount || Math.round(((originalPrice - currentPrice) / originalPrice) * 100));
-                    discountElement.textContent = `-${discount}%`;
-                    discountElement.style.display = 'inline-flex';
-                    saleBadge.textContent = `-${discount}%`;
-                    saleBadge.style.display = 'inline-flex';
-                } else {
-                    originalPriceElement.style.display = 'none';
-                    discountElement.style.display = 'none';
-                    saleBadge.style.display = 'none';
-                }
-
-                document.getElementById('stockInfo').textContent = `Còn ${product.stock || 0} sản phẩm`;
-
-                const images = getProductImages(product);
-                renderImageGallery(images);
-
-                selectedSize = Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M';
-                selectedColor = 'Mặc định';
-                renderOptionButtons('sizeSelector', product.sizes || []);
+                selectedColor = product.defaultVariant?.color || getColorOptions(product)[0]?.name || 'Mặc định';
+                selectedSize = product.defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M');
+                syncSelectedVariant(product);
                 renderDescription({ ...product, categoryName });
                 await Promise.all([
                     loadSizeChart(product),
@@ -621,7 +830,10 @@
         function setupQuantityControls() {
             document.getElementById('increaseQty').addEventListener('click', function() {
                 const input = document.getElementById('quantityInput');
-                input.value = parseInt(input.value, 10) + 1;
+                const variant = currentProduct ? getMatchingVariant(currentProduct, selectedColor, selectedSize) : null;
+                const stock = Number(variant?.stock ?? currentProduct?.stock ?? 0);
+                const nextValue = parseInt(input.value, 10) + 1;
+                input.value = stock > 0 ? Math.min(nextValue, stock) : nextValue;
             });
 
             document.getElementById('decreaseQty').addEventListener('click', function() {
@@ -667,11 +879,24 @@
                 }
             });
 
+            document.getElementById('relatedProductsGrid').addEventListener('click', function(event) {
+                const wishlistButton = event.target.closest('.related-wishlist');
+                if (!wishlistButton) {
+                    return;
+                }
+
+                const product = JSON.parse(wishlistButton.dataset.product.replace(/&apos;/g, "'"));
+                const result = window.toggleWishlistItem(product);
+                window.setWishlistButtonState(wishlistButton, result.active);
+            });
+
             document.getElementById('wishlistBtn').addEventListener('click', function() {
-                this.classList.toggle('active');
-                this.innerHTML = this.classList.contains('active')
-                    ? '<i class="fas fa-heart"></i> Đã thêm yêu thích'
-                    : '<i class="far fa-heart"></i> Yêu thích';
+                if (!currentProduct) {
+                    return;
+                }
+
+                const result = window.toggleWishlistItem(buildWishlistPayloadFromCurrent());
+                window.setWishlistButtonState(this, result.active, { textMode: true });
             });
 
             document.getElementById('submitReviewForm').addEventListener('submit', async function(event) {
@@ -720,7 +945,9 @@
         document.addEventListener('DOMContentLoaded', async function() {
             loadCommonComponents();
             updateCartBadge();
+            updateWishlistBadge();
             updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
             setupTabSwitching();
             setupQuantityControls();
             setupStarRating();

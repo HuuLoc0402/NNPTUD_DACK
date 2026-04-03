@@ -117,7 +117,9 @@
         document.addEventListener('DOMContentLoaded', async function() {
             loadCommonComponents();
             updateCartBadge();
+            updateWishlistBadge();
             updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
             await loadCategories();
             applyUrlFilters();
             await loadProducts();
@@ -142,6 +144,36 @@
 
         function getProductImage(product) {
             return window.CONFIG?.resolveProductImage(product, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function getDefaultVariant(product) {
+            if (product?.defaultVariant) {
+                return product.defaultVariant;
+            }
+
+            if (Array.isArray(product?.variants) && product.variants.length) {
+                return product.variants[0];
+            }
+
+            return {
+                size: Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M',
+                color: Array.isArray(product?.colors) && product.colors.length ? product.colors[0] : 'Mặc định',
+                finalPrice: Number(product?.currentPrice || product?.price || 0)
+            };
+        }
+
+        function buildWishlistPayload(product) {
+            const defaultVariant = getDefaultVariant(product);
+            return {
+                productId: product._id,
+                slug: product.slug || product._id,
+                name: product.name,
+                image: getProductImage(product),
+                price: Number(defaultVariant.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
+                originalPrice: Number(product.minPrice || product.price || product.currentPrice || 0),
+                size: defaultVariant.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
+                color: defaultVariant.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
+            };
         }
 
         function resolveCategoryName(product) {
@@ -256,7 +288,7 @@
             const priceMin = parseInt(document.getElementById('priceMin').value);
             const priceMax = parseInt(document.getElementById('priceMax').value);
             filteredProducts = filteredProducts.filter(p => {
-                const currentPrice = Number(p.currentPrice || p.price || 0);
+                const currentPrice = Number(p.minCurrentPrice || p.currentPrice || p.price || 0);
                 return currentPrice >= priceMin && currentPrice <= priceMax;
             });
             
@@ -287,14 +319,31 @@
 
             pageProducts.forEach(product => {
                 const sizes = product.sizes ? product.sizes.map(s => s.name || s).filter(Boolean) : [];
-                const currentPrice = Number(product.currentPrice || product.price || 0);
-                const price = currentPrice ? `${currentPrice.toLocaleString('vi-VN')} đ` : 'N/A';
+                const defaultVariant = getDefaultVariant(product);
+                const currentPrice = Number(product.minCurrentPrice || defaultVariant.finalPrice || product.currentPrice || product.price || 0);
+                const maxCurrentPrice = Number(product.maxCurrentPrice || currentPrice);
+                const price = currentPrice
+                    ? (maxCurrentPrice > currentPrice
+                        ? `Từ ${currentPrice.toLocaleString('vi-VN')} đ`
+                        : `${currentPrice.toLocaleString('vi-VN')} đ`)
+                    : 'N/A';
                 const imageUrl = getProductImage(product);
                 const productIdentifier = product.slug || product._id;
                 const categoryName = resolveCategoryName(product);
 
                 const card = document.createElement('article');
                 card.className = 'product-card';
+                card.setAttribute('role', 'link');
+                card.setAttribute('tabindex', '0');
+                card.onclick = () => {
+                    window.location.href = `product-detail.html?slug=${encodeURIComponent(productIdentifier)}`;
+                };
+                card.onkeydown = (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        window.location.href = `product-detail.html?slug=${encodeURIComponent(productIdentifier)}`;
+                    }
+                };
                 card.innerHTML = `
                     <div class="product-card-image">
                         <img src="${imageUrl}" alt="${product.name}" onerror="this.src='../../assets/images/banner1.png'">
@@ -307,14 +356,14 @@
                         </div>
                         <div class="product-card-price">${price}</div>
                         <div class="product-card-actions">
-                            <button class="btn btn-sm btn-view btn-flex" onclick="window.location.href='product-detail.html?slug=${encodeURIComponent(productIdentifier)}'">
+                            <button class="btn btn-sm btn-view btn-flex" onclick="event.stopPropagation(); window.location.href='product-detail.html?slug=${encodeURIComponent(productIdentifier)}'">
                                 <i class="fas fa-eye"></i> Chi Tiết
                             </button>
-                            <button class="btn btn-sm btn-cart btn-flex" onclick="addToCartById('${product._id}')">
+                            <button class="btn btn-sm btn-cart btn-flex" onclick="event.stopPropagation(); addToCartById('${product._id}')">
                                 <i class="fas fa-shopping-cart"></i> Thêm
                             </button>
-                            <button class="btn btn-sm btn-wishlist" onclick="toggleWishlist(this)">
-                                <i class="far fa-heart"></i>
+                            <button class="btn btn-sm btn-wishlist ${window.isProductWishlisted?.(product._id) ? 'active' : ''}" data-product='${JSON.stringify(buildWishlistPayload(product)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation(); toggleWishlist(this)">
+                                <i class="${window.isProductWishlisted?.(product._id) ? 'fas' : 'far'} fa-heart"></i>
                             </button>
                         </div>
                     </div>
@@ -434,10 +483,10 @@
                 productId: product._id,
                 slug: product.slug,
                 name: product.name,
-                price: Number(product.currentPrice || product.price || 0),
+                price: Number(getDefaultVariant(product).finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
                 image: getProductImage(product),
-                size: Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M',
-                color: Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định'
+                size: getDefaultVariant(product).size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
+                color: getDefaultVariant(product).color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
             });
         }
 
@@ -458,9 +507,9 @@
         }
 
         function toggleWishlist(button) {
-            const icon = button.querySelector('i');
-            icon.classList.toggle('far');
-            icon.classList.toggle('fas');
+            const product = JSON.parse(button.dataset.product.replace(/&apos;/g, "'"));
+            const result = window.toggleWishlistItem(product);
+            window.setWishlistButtonState(button, result.active);
         }
     </script>
 </body>

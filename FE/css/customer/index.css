@@ -538,6 +538,12 @@ body {
     background: rgba(220, 53, 69, 0.05);
 }
 
+.btn-wishlist.active {
+    color: white;
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+}
+
 .cta-section {
     background: linear-gradient(135deg, var(--bg-light) 0%, white 100%);
     padding: 60px 40px;

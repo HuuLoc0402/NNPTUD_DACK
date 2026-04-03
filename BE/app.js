@@ -48,6 +48,7 @@ app.use('/api/v1/products', require('./src/routes/products'));
 app.use('/api/v1/users', require('./src/routes/users'));
 app.use('/api/v1/carts', require('./src/routes/carts'));
 app.use('/api/v1/orders', require('./src/routes/orders'));
+app.use('/api/v1/wishlist', require('./src/routes/wishlist'));
 app.use('/api/v1/comments', require('./src/routes/comments'));
 app.use('/api/v1/payments', require('./src/routes/payments'));
 app.use('/api/v1/sizes', require('./src/routes/sizes'));

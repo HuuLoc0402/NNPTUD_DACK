@@ -4,6 +4,14 @@ const Product = require('../models/Product');
 const productController = require('../controllers/productController');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const {
+  PRODUCT_SIZE_ENUM,
+  buildVariantSkuSeed,
+  dedupeColorOptions,
+  normalizeColorCode,
+  normalizeColorName,
+  normalizeProductImages
+} = require('../utils/productVariant');
 
 const router = express.Router();
 
@@ -51,6 +59,183 @@ const buildUniqueVariantSku = async (sku, excludeProductId = null) => {
   }
 };
 
+const parseJsonField = (value, fallback) => {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return fallback;
+  }
+};
+
+const toNumber = (value, fallback = 0) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+};
+
+const toBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  return String(value).toLowerCase() === 'true';
+};
+
+const normalizeLegacyColors = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeColorName(item)).filter(Boolean);
+  }
+
+  return String(value || '')
+    .split(',')
+    .map((item) => normalizeColorName(item))
+    .filter(Boolean);
+};
+
+const normalizeGalleryEntries = ({ req, existingProduct }) => {
+  const existingImages = normalizeProductImages(existingProduct);
+  const galleryEntries = parseJsonField(req.body.galleryEntries, null);
+  const galleryFiles = req.files?.galleryImages || [];
+  const legacyImageFile = req.files?.image?.[0] || null;
+
+  if (Array.isArray(galleryEntries) && galleryEntries.length > 0) {
+    const mappedEntries = galleryEntries
+      .map((entry, index) => {
+        const uploadIndex = Number(entry?.uploadIndex);
+        const uploadFile = Number.isInteger(uploadIndex) ? galleryFiles[uploadIndex] : null;
+        const url = uploadFile
+          ? `/uploads/${uploadFile.filename}`
+          : String(entry?.url || '').trim();
+
+        if (!url) {
+          return null;
+        }
+
+        return {
+          url,
+          color: entry?.color ? normalizeColorName(entry.color) : null,
+          alt: String(entry?.alt || '').trim(),
+          isPrimary: toBoolean(entry?.isPrimary, false) || index === 0
+        };
+      })
+      .filter(Boolean);
+
+    if (mappedEntries.length > 0) {
+      const hasPrimary = mappedEntries.some((item) => item.isPrimary);
+      if (!hasPrimary) {
+        mappedEntries[0].isPrimary = true;
+      }
+
+      return mappedEntries.map((item, index) => ({
+        ...item,
+        isPrimary: item.isPrimary || index === 0
+      }));
+    }
+  }
+
+  if (galleryFiles.length > 0) {
+    return galleryFiles.map((file, index) => ({
+      url: `/uploads/${file.filename}`,
+      color: null,
+      alt: '',
+      isPrimary: index === 0
+    }));
+  }
+
+  if (legacyImageFile) {
+    return [{
+      url: `/uploads/${legacyImageFile.filename}`,
+      color: null,
+      alt: '',
+      isPrimary: true
+    }];
+  }
+
+  return existingImages;
+};
+
+const normalizeLegacyVariants = (req, existingProduct = null) => {
+  const existingVariant = existingProduct?.variants?.[0] || {};
+  const size = req.body.size || existingVariant.size || 'M';
+  const colorName = normalizeLegacyColors(req.body.color || existingVariant.color || existingProduct?.color || 'Mac dinh')[0] || 'Mac dinh';
+  const price = toNumber(req.body.price ?? existingVariant.price ?? existingProduct?.price, 0);
+  const stock = toNumber(req.body.quantity ?? existingVariant.stock ?? existingProduct?.quantity, 0);
+  const sku = req.body.sku || existingVariant.sku || null;
+
+  return [{
+    size,
+    color: colorName,
+    colorCode: normalizeColorCode(existingVariant.colorCode, colorName),
+    price,
+    stock,
+    sku
+  }];
+};
+
+const normalizeVariantsInput = (rawVariants = []) => {
+  if (!Array.isArray(rawVariants) || rawVariants.length === 0) {
+    return [];
+  }
+
+  return rawVariants
+    .map((variant) => ({
+      size: String(variant?.size || '').trim(),
+      color: normalizeColorName(variant?.color),
+      colorCode: normalizeColorCode(variant?.colorCode, variant?.color),
+      price: toNumber(variant?.price, 0),
+      stock: Math.max(0, toNumber(variant?.stock, 0)),
+      sku: String(variant?.sku || '').trim() || null
+    }))
+    .filter((variant) => variant.size && PRODUCT_SIZE_ENUM.includes(variant.size));
+};
+
+const ensureUniqueVariantKeys = (variants) => {
+  const seen = new Set();
+  for (const variant of variants) {
+    const key = `${variant.color}__${variant.size}`;
+    if (seen.has(key)) {
+      throw new Error(`Biến thể ${variant.color} / ${variant.size} đang bị trùng`);
+    }
+    seen.add(key);
+  }
+};
+
+const assignVariantSkus = async ({ name, variants, excludeProductId }) => {
+  const usedSkus = new Set();
+
+  for (const variant of variants) {
+    const preferredSku = variant.sku || buildVariantSkuSeed({
+      name,
+      color: variant.color,
+      size: variant.size
+    });
+    let candidate = preferredSku;
+    let counter = 1;
+
+    while (usedSkus.has(candidate)) {
+      counter += 1;
+      candidate = `${preferredSku}-${counter}`;
+    }
+
+    candidate = await buildUniqueVariantSku(candidate, excludeProductId);
+    usedSkus.add(candidate);
+    variant.sku = candidate;
+  }
+
+  return variants;
+};
+
 const getViewerRole = (req) => {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -66,39 +251,47 @@ const getViewerRole = (req) => {
 };
 
 const buildProductPayload = async (req, existingProduct = null) => {
-  const imagePath = req.file
-    ? `/uploads/${req.file.filename}`
-    : req.body.image || existingProduct?.image || null;
-  const sizeValue = req.body.size || existingProduct?.variants?.[0]?.size || 'M';
-  const rawSkuValue = req.body.sku ?? existingProduct?.variants?.[0]?.sku;
-  const priceValue = Number(req.body.price ?? existingProduct?.price ?? 0);
-  const quantityValue = Number(req.body.quantity ?? existingProduct?.quantity ?? 0);
-  const discountValue = Number(req.body.discount ?? existingProduct?.discount ?? 0);
-  const colorValues = req.body.color
-    ? String(req.body.color).split(',').map((item) => item.trim()).filter(Boolean)
-    : existingProduct?.color || [];
+  const productName = req.body.name ?? existingProduct?.name;
+  const discountValue = toNumber(req.body.discount ?? existingProduct?.discount, 0);
   const slugValue = req.body.name
     ? await buildUniqueSlug(req.body.name, existingProduct?._id)
     : existingProduct?.slug;
-  const skuValue = await buildUniqueVariantSku(rawSkuValue, existingProduct?._id);
+  const galleryEntries = normalizeGalleryEntries({ req, existingProduct });
+  const rawVariants = parseJsonField(req.body.variants, null);
+  const variants = normalizeVariantsInput(rawVariants);
+  const normalizedVariants = variants.length > 0
+    ? variants
+    : normalizeLegacyVariants(req, existingProduct);
+
+  ensureUniqueVariantKeys(normalizedVariants);
+  await assignVariantSkus({
+    name: productName,
+    variants: normalizedVariants,
+    excludeProductId: existingProduct?._id
+  });
+
+  const totalQuantity = normalizedVariants.reduce((sum, item) => sum + Math.max(0, toNumber(item.stock, 0)), 0);
+  const priceValues = normalizedVariants.map((item) => toNumber(item.price, 0));
+  const basePrice = priceValues.length > 0 ? Math.min(...priceValues) : toNumber(existingProduct?.price, 0);
+  const colorOptions = dedupeColorOptions([
+    ...normalizedVariants.map((item) => ({ name: item.color, code: item.colorCode })),
+    ...galleryEntries.filter((item) => item.color).map((item) => ({ name: item.color }))
+  ]);
+  const primaryImage = galleryEntries.find((item) => item.isPrimary)?.url || galleryEntries[0]?.url || null;
 
   return {
-    name: req.body.name ?? existingProduct?.name,
+    name: productName,
     slug: slugValue,
     description: req.body.description ?? existingProduct?.description,
     category: req.body.category ?? existingProduct?.category,
-    price: priceValue,
+    price: basePrice,
     discount: discountValue,
-    quantity: quantityValue,
-    image: imagePath,
-    images: imagePath ? [{ url: imagePath }] : existingProduct?.images || [],
-    variants: [{
-      size: sizeValue,
-      price: priceValue,
-      stock: quantityValue,
-      sku: skuValue
-    }],
-    color: colorValues,
+    quantity: totalQuantity,
+    image: primaryImage,
+    images: galleryEntries,
+    variants: normalizedVariants,
+    color: colorOptions.map((item) => item.name),
+    colorOptions,
     isActive: req.body.isActive === undefined
       ? existingProduct?.isActive ?? true
       : req.body.isActive === 'true' || req.body.isActive === true,
@@ -210,7 +403,10 @@ router.get('/:slug', async (req, res, next) => {
   }
 });
 
-router.post('/', authenticate, adminOnly, upload.single('image'), async (req, res, next) => {
+router.post('/', authenticate, adminOnly, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'galleryImages', maxCount: 20 }
+]), async (req, res, next) => {
   try {
     const payload = await buildProductPayload(req);
     const product = await productController.createProduct(payload);
@@ -225,7 +421,10 @@ router.post('/', authenticate, adminOnly, upload.single('image'), async (req, re
   }
 });
 
-router.put('/:id', authenticate, adminOnly, upload.single('image'), async (req, res, next) => {
+router.put('/:id', authenticate, adminOnly, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'galleryImages', maxCount: 20 }
+]), async (req, res, next) => {
   try {
     const existingProduct = await productController.findProductById(req.params.id);
     if (!existingProduct) {

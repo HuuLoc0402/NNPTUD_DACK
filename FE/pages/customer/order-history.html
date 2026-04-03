@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
     <style>
         * {
             margin: 0;
@@ -345,6 +346,8 @@
     </style>
 </head>
 <body>
+    <div id="header"></div>
+
     <div class="container">
         <div class="page-header">
             <h1>Lịch Sử Đơn Hàng</h1>
@@ -389,27 +392,43 @@
         </div>
     </div>
 
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api/v1';
         let allOrders = [];
+
+        function ensureCustomerAccount() {
+            const user = window.getStoredUser?.();
+            if (!user) {
+                redirectToLogin();
+                return false;
+            }
+
+            if (user.role === 'admin') {
+                window.location.replace('../admin/dashboard.html');
+                return false;
+            }
+
+            return true;
+        }
 
         // Load user's orders from API
         async function loadUserOrders() {
             try {
-                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
-                
-                if (!token) {
+                if (!ensureAuthenticated()) {
                     redirectToLogin();
                     return;
                 }
 
-                const response = await fetch(`${API_BASE_URL}/orders`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await response.json();
+                if (!ensureCustomerAccount()) {
+                    return;
+                }
+
+                const data = await window.OrderAPI.getMyOrders();
                 
                 if (data.success && Array.isArray(data.data)) {
                     allOrders = data.data;
@@ -480,7 +499,6 @@
                             <div class="order-total">Total: ${(order.totalAmount || 0).toLocaleString('vi-VN')}₫</div>
                             <div class="order-actions">
                                 <button class="btn-view" onclick="viewOrderDetail('${order._id}')">Xem Chi Tiết</button>
-                                ${order.orderStatus !== 'cancelled' ? `<button class="btn-reorder" onclick="reorderItems('${order._id}')">Đặt Lại</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -491,14 +509,7 @@
         // View order detail
         async function viewOrderDetail(id) {
             try {
-                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
-                const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await response.json();
+                const data = await window.OrderAPI.getOrderDetail(id);
                 
                 if (data.success && data.data) {
                     const order = data.data;
@@ -602,10 +613,6 @@
             document.getElementById('orderModal').classList.remove('active');
         }
 
-        function reorderItems(id) {
-            alert('Chức năng đặt lại sẽ sớm có sẵn!');
-        }
-
         function filterOrders() {
             const search = document.getElementById('searchOrder').value.toLowerCase();
             const status = document.getElementById('statusFilter').value;
@@ -659,8 +666,14 @@
         });
 
         // Load orders on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            if (!ensureAuthenticated()) {
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCommonComponents();
+            updateCartBadge();
+            updateWishlistBadge();
+            updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
+
+            if (!ensureAuthenticated() || !ensureCustomerAccount()) {
                 return;
             }
 
@@ -669,6 +682,7 @@
 
         window.addEventListener('pageshow', function() {
             ensureAuthenticated();
+            ensureCustomerAccount();
         });
     </script>
 </body>

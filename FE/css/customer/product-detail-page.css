@@ -234,6 +234,56 @@ body {
     flex-wrap: wrap;
 }
 
+.color-selection-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.selected-color-label {
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.color-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.color-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.color-option:hover,
+.color-option.active {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: 0 8px 18px rgba(220, 53, 69, 0.12);
+}
+
+.color-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.color-name {
+    white-space: nowrap;
+}
+
 .size-option {
     padding: 10px 16px;
     border: 1px solid #ddd;
@@ -252,6 +302,17 @@ body {
     background: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
+}
+
+.size-option.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #f6f6f6;
+}
+
+.size-option.is-disabled:hover {
+    border-color: #ddd;
+    color: inherit;
 }
 
 .quantity-selector {
@@ -338,6 +399,19 @@ body {
 .btn-outline:hover {
     background: var(--primary-color);
     color: white;
+}
+
+.btn-outline.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 10px 22px rgba(220, 53, 69, 0.2);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 .product-benefits {
@@ -673,6 +747,9 @@ body {
 
 .product-card-small .product-info {
     padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .product-card-small .product-name {
@@ -682,6 +759,31 @@ body {
 
 .product-card-small .product-price {
     font-size: 14px;
+}
+
+.related-wishlist {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #e4e4e4;
+    border-radius: 50%;
+    background: white;
+    color: var(--text-light);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.related-wishlist:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.related-wishlist.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
 }
 
 @media (max-width: 768px) {

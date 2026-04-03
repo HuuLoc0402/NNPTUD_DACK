@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
-
-const PRODUCT_SIZE_ENUM = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', '6XL', 'One Size'];
+const { PRODUCT_SIZE_ENUM } = require('../utils/productVariant');
 
 const productSchema = new mongoose.Schema(
   {
@@ -61,6 +60,20 @@ const productSchema = new mongoose.Schema(
     images: [
       {
         url: String,
+        color: {
+          type: String,
+          trim: true,
+          default: null
+        },
+        alt: {
+          type: String,
+          trim: true,
+          default: ''
+        },
+        isPrimary: {
+          type: Boolean,
+          default: false
+        },
         _id: false
       }
     ],
@@ -68,9 +81,34 @@ const productSchema = new mongoose.Schema(
       type: [String],
       default: []
     },
-    // Product variants for different sizes with different prices
+    colorOptions: [
+      {
+        name: {
+          type: String,
+          trim: true,
+          required: true
+        },
+        code: {
+          type: String,
+          trim: true,
+          default: '#D9D9D9'
+        },
+        _id: false
+      }
+    ],
+    // Product variants for different colors and sizes with different prices
     variants: [
       {
+        color: {
+          type: String,
+          trim: true,
+          default: 'Mac dinh'
+        },
+        colorCode: {
+          type: String,
+          trim: true,
+          default: '#D9D9D9'
+        },
         size: {
           type: String,
           required: true,
