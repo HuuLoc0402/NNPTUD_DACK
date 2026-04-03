@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liên Hệ - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <style>
+        :root {
+            --contact-accent: #b23a48;
+            --contact-dark: #22303d;
+            --contact-muted: #68717d;
+            --contact-surface: rgba(255, 255, 255, 0.86);
+            --contact-shadow: 0 26px 60px rgba(34, 48, 61, 0.12);
+            --contact-border: rgba(34, 48, 61, 0.1);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top right, rgba(178, 58, 72, 0.12), transparent 28%),
+                linear-gradient(180deg, #fef7f3 0%, #fff 40%, #f3efe8 100%);
+            color: var(--contact-dark);
+        }
+
+        .page-shell {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 24px 72px;
+        }
+
+        .contact-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+            gap: 28px;
+            padding: 42px 0 30px;
+        }
+
+        .hero-copy,
+        .hero-panel,
+        .contact-form-card,
+        .faq-card,
+        .service-card {
+            background: var(--contact-surface);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--contact-shadow);
+        }
+
+        .hero-copy {
+            border-radius: 34px;
+            padding: 36px;
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 244, 239, 0.94) 100%),
+                url('../../assets/images/banner4.jpg') center/cover no-repeat;
+            background-blend-mode: screen;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(178, 58, 72, 0.1);
+            color: var(--contact-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        h1,
+        h2 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        h1 {
+            font-size: clamp(34px, 5vw, 60px);
+            line-height: 1.04;
+            max-width: 10ch;
+            margin-bottom: 16px;
+        }
+
+        .lead {
+            max-width: 54ch;
+            color: var(--contact-muted);
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 28px;
+        }
+
+        .stat-box {
+            padding: 18px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(34, 48, 61, 0.08);
+        }
+
+        .stat-box strong {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .stat-box span {
+            color: var(--contact-muted);
+            font-size: 13px;
+        }
+
+        .hero-panel {
+            border-radius: 30px;
+            padding: 28px;
+            display: grid;
+            gap: 14px;
+            align-content: start;
+            background: linear-gradient(180deg, rgba(244, 233, 223, 0.95) 0%, rgba(255, 255, 255, 0.94) 100%);
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+            margin-bottom: 26px;
+        }
+
+        .service-card {
+            border-radius: 26px;
+            padding: 24px;
+            border: 1px solid var(--contact-border);
+        }
+
+        .service-card i {
+            width: 52px;
+            height: 52px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            background: rgba(178, 58, 72, 0.12);
+            color: var(--contact-accent);
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .service-card h3,
+        .faq-card h3,
+        .hero-panel h2,
+        .contact-form-card h2 {
+            font-size: 26px;
+            margin-bottom: 10px;
+        }
+
+        .service-card p,
+        .hero-panel p,
+        .detail-line,
+        .faq-item p,
+        .contact-form-card p {
+            color: var(--contact-muted);
+            font-size: 14px;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
+            gap: 24px;
+        }
+
+        .faq-card,
+        .contact-form-card {
+            border-radius: 30px;
+            padding: 28px;
+        }
+
+        .contact-detail-list {
+            display: grid;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .detail-line {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 14px 0;
+            border-top: 1px solid var(--contact-border);
+        }
+
+        .detail-line:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .detail-line i {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(178, 58, 72, 0.12);
+            color: var(--contact-accent);
+        }
+
+        .detail-line strong {
+            display: block;
+            color: var(--contact-dark);
+            margin-bottom: 4px;
+        }
+
+        .faq-list {
+            display: grid;
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .faq-item {
+            padding: 18px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--contact-border);
+        }
+
+        .faq-item h4 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .contact-form {
+            display: grid;
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .contact-form label {
+            display: grid;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .contact-form input,
+        .contact-form select,
+        .contact-form textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(34, 48, 61, 0.14);
+            background: rgba(255, 255, 255, 0.88);
+            font: inherit;
+            color: var(--contact-dark);
+        }
+
+        .contact-form textarea {
+            min-height: 160px;
+            resize: vertical;
+        }
+
+        .contact-form button {
+            width: fit-content;
+            border: none;
+            padding: 14px 22px;
+            border-radius: 999px;
+            background: var(--contact-accent);
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .form-note {
+            font-size: 13px;
+            color: var(--contact-muted);
+        }
+
+        @media (max-width: 1024px) {
+            .contact-hero,
+            .contact-grid,
+            .service-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .page-shell {
+                padding: 0 16px 56px;
+            }
+
+            .hero-stats,
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-copy,
+            .hero-panel,
+            .faq-card,
+            .contact-form-card {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="page-shell">
+        <section class="contact-hero">
+            <article class="hero-copy">
+                <div>
+                    <span class="eyebrow"><i class="fas fa-headset"></i> Customer Care</span>
+                    <h1>Liên hệ nhanh, rõ ràng và đúng người phụ trách.</h1>
+                    <p class="lead">Nếu bạn cần tư vấn size, tình trạng đơn hàng, đổi trả sản phẩm, hỗ trợ thanh toán hoặc muốn hợp tác cùng MARC, trang này gom toàn bộ đầu mối liên hệ để bạn không phải tìm từng nơi riêng lẻ.</p>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat-box">
+                        <strong>8:30 - 21:30</strong>
+                        <span>Khung giờ phản hồi mỗi ngày</span>
+                    </div>
+                    <div class="stat-box">
+                        <strong>&lt; 30 phút</strong>
+                        <span>Thời gian phản hồi chat trung bình</span>
+                    </div>
+                    <div class="stat-box">
+                        <strong>3 đầu mối</strong>
+                        <span>Bán hàng, CSKH và hợp tác</span>
+                    </div>
+                </div>
+            </article>
+
+            <aside class="hero-panel">
+                <h2>Chọn đúng kênh để xử lý nhanh hơn</h2>
+                <p>Nếu bạn liên hệ về đơn hàng, hãy chuẩn bị sẵn mã đơn hoặc số điện thoại đặt hàng. Nếu bạn liên hệ về đổi trả, vui lòng ghi rõ sản phẩm, size và tình trạng nhận được.</p>
+                <div class="contact-detail-list">
+                    <div class="detail-line">
+                        <i class="fas fa-phone-alt"></i>
+                        <div>
+                            <strong>Hotline bán hàng</strong>
+                            <span>+84 379 400 387</span>
+                        </div>
+                    </div>
+                    <div class="detail-line">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <strong>Email chăm sóc khách hàng</strong>
+                            <span>support@marcfashion.vn</span>
+                        </div>
+                    </div>
+                    <div class="detail-line">
+                        <i class="fas fa-briefcase"></i>
+                        <div>
+                            <strong>Hợp tác thương hiệu</strong>
+                            <span>partnership@marcfashion.vn</span>
+                        </div>
+                    </div>
+                    <div class="detail-line">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Cửa hàng gần nhất</strong>
+                            <span><a href="store.html">Xem danh sách cửa hàng và bản đồ</a></span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <section class="service-grid">
+            <article class="service-card">
+                <i class="fas fa-ruler-combined"></i>
+                <h3>Tư vấn size</h3>
+                <p>Gửi chiều cao, cân nặng, số đo cơ bản hoặc ảnh sản phẩm bạn đang quan tâm. Đội ngũ bán hàng sẽ đề xuất size phù hợp theo từng form đồ.</p>
+            </article>
+            <article class="service-card">
+                <i class="fas fa-box-open"></i>
+                <h3>Đổi trả đơn hàng</h3>
+                <p>Với yêu cầu đổi size hoặc đổi mẫu, bạn nên gửi kèm mã đơn hàng và hình ảnh hiện trạng sản phẩm để được hướng dẫn nhanh hơn.</p>
+            </article>
+            <article class="service-card">
+                <i class="fas fa-bullhorn"></i>
+                <h3>Hợp tác truyền thông</h3>
+                <p>Influencer, stylist, production house hoặc đối tác bán lẻ có thể liên hệ trực tiếp qua form bên dưới để MARC chuyển đúng bộ phận.</p>
+            </article>
+        </section>
+
+        <section class="contact-grid">
+            <aside class="faq-card">
+                <h2>Câu hỏi thường gặp</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <h4>MARC phản hồi trong bao lâu?</h4>
+                        <p>Khung chat thường phản hồi trong 15 đến 30 phút trong giờ làm việc. Email có thể mất từ 2 đến 6 giờ tùy nội dung.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Tôi có thể kiểm tra cửa hàng còn hàng không?</h4>
+                        <p>Có. Hãy gửi mã sản phẩm hoặc ảnh chụp màn hình, chúng tôi sẽ kiểm tra tồn kho gần khu vực của bạn trước khi bạn ghé cửa hàng.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Tôi muốn góp ý về trải nghiệm mua hàng?</h4>
+                        <p>Bạn có thể chọn chủ đề “Góp ý dịch vụ” trong form. Những góp ý cụ thể về chi nhánh, ca làm việc hoặc đơn hàng sẽ được xử lý nhanh hơn.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="contact-form-card">
+                <h2>Gửi yêu cầu cho MARC</h2>
+                <p>Form này hiện lưu nội dung trên trình duyệt để bạn có thể tiếp tục hoàn thiện sau. Nếu muốn gửi thật tới đội ngũ, chúng tôi sẽ mở rộng thêm API hoặc tích hợp email service ở bước tiếp theo.</p>
+
+                <form class="contact-form" id="contactForm">
+                    <div class="form-row">
+                        <label>
+                            Họ và tên
+                            <input type="text" id="fullName" placeholder="Nguyễn Thị A" required>
+                        </label>
+                        <label>
+                            Số điện thoại
+                            <input type="tel" id="phone" placeholder="09xxxxxxxx" required>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <label>
+                            Email
+                            <input type="email" id="email" placeholder="ban@example.com" required>
+                        </label>
+                        <label>
+                            Chủ đề
+                            <select id="topic" required>
+                                <option value="">Chọn chủ đề</option>
+                                <option value="Tư vấn size">Tư vấn size</option>
+                                <option value="Đổi trả đơn hàng">Đổi trả đơn hàng</option>
+                                <option value="Kiểm tra cửa hàng">Kiểm tra cửa hàng</option>
+                                <option value="Góp ý dịch vụ">Góp ý dịch vụ</option>
+                                <option value="Hợp tác">Hợp tác</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <label>
+                        Nội dung
+                        <textarea id="message" placeholder="Mô tả chi tiết yêu cầu của bạn..." required></textarea>
+                    </label>
+
+                    <button type="submit">Lưu yêu cầu</button>
+                    <span class="form-note" id="formStatus">Chưa có yêu cầu nào được lưu trong phiên làm việc này.</span>
+                </form>
+            </section>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script>
+        const CONTACT_STORAGE_KEY = 'marc_contact_request_draft';
+
+        function hydrateContactDraft() {
+            const rawDraft = localStorage.getItem(CONTACT_STORAGE_KEY);
+            if (!rawDraft) {
+                return;
+            }
+
+            try {
+                const draft = JSON.parse(rawDraft);
+                Object.entries(draft).forEach(([key, value]) => {
+                    const input = document.getElementById(key);
+                    if (input) {
+                        input.value = value;
+                    }
+                });
+
+                document.getElementById('formStatus').textContent = 'Đã khôi phục bản nháp liên hệ gần nhất trên trình duyệt này.';
+            } catch (error) {
+                console.error('Cannot parse contact draft:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCommonComponents();
+            hydrateContactDraft();
+
+            document.getElementById('contactForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const payload = {
+                    fullName: document.getElementById('fullName').value.trim(),
+                    phone: document.getElementById('phone').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    topic: document.getElementById('topic').value,
+                    message: document.getElementById('message').value.trim(),
+                    savedAt: new Date().toISOString()
+                };
+
+                localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(payload));
+                document.getElementById('formStatus').textContent = `Đã lưu yêu cầu lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}.`;
+                alert('Yêu cầu của bạn đã được lưu trên trình duyệt. Nếu muốn, tôi có thể viết tiếp API backend để gửi form này thực sự qua email hoặc lưu DB.');
+            });
+        });
+    </script>
+</body>
+</html>

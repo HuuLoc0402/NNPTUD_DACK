@@ -1,7 +1,4 @@
-/**
- * Validation utilities for user authentication
- * Ensures both users and admins fill out required fields correctly
- */
+
 
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,8 +14,10 @@ const validateFullName = (fullName) => {
 };
 
 const validatePhone = (phone) => {
-  const phoneRegex = /^[0-9]{10,11}$/;
-  return phoneRegex.test(phone.replace(/[\s\-\+]/g, ''));
+  if (!phone) return false;
+  const cleaned = phone.replace(/[\s\-\+]/g, '');
+  // Accept 10-11 digits or Vietnam format starting with 0
+  return /^[0-9]{10,11}$/.test(cleaned);
 };
 
 // Validate login credentials

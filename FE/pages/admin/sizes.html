@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Bảng Size - MARC Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/admin/unified.css">
+    <link rel="stylesheet" href="../../css/admin/sizes.css">
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-logo">MARC</div>
+            <ul class="admin-sidebar-menu">
+                <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> DASHBOARD</a></li>
+                <li><a href="products.html"><i class="fas fa-box"></i> SẢN PHẨM</a></li>
+                <li><a href="categories.html"><i class="fas fa-tags"></i> DANH MỤC</a></li>
+                <li><a href="sizes.html" class="active"><i class="fas fa-ruler-combined"></i> BẢNG SIZE</a></li>
+                <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
+                <li><hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);"></li>
+                <li><a href="../customer/index.html"><i class="fas fa-arrow-left"></i> VỀ TRANG CHỦ</a></li>
+                <li><a href="javascript:logout();"><i class="fas fa-sign-out-alt"></i> ĐĂNG XUẤT</a></li>
+            </ul>
+        </aside>
+
+        <div class="admin-main">
+            <div class="admin-header-section">
+                <h1>Quản Lý Bảng Size</h1>
+                <button class="btn btn-primary" onclick="openSizeModal()"><i class="fas fa-plus"></i> Thêm Size</button>
+            </div>
+
+            <div class="card">
+                <table class="size-table">
+                    <thead>
+                        <tr>
+                            <th>Size</th>
+                            <th>US</th>
+                            <th>EU</th>
+                            <th>Chiều cao</th>
+                            <th>Cân nặng</th>
+                            <th>Ngực</th>
+                            <th>Eo</th>
+                            <th>Hông</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sizeTableBody">
+                        <tr><td colspan="10" class="table-empty">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="sizeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="sizeModalTitle">Thêm Size Mới</h2>
+                <button class="close-btn" onclick="closeSizeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="sizeForm">
+                <div class="form-row form-row-2">
+                    <div class="form-group">
+                        <label>Tên Size *</label>
+                        <select id="sizeName" required>
+                            <option value="">Chọn size</option>
+                            <option value="XXS">XXS</option>
+                            <option value="XS">XS</option>
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="XXL">XXL</option>
+                            <option value="XXXL">XXXL</option>
+                            <option value="4XL">4XL</option>
+                            <option value="5XL">5XL</option>
+                            <option value="6XL">6XL</option>
+                            <option value="One Size">One Size</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row form-row-2">
+                    <div class="form-group">
+                        <label>Size US</label>
+                        <input type="text" id="sizeUs">
+                    </div>
+                    <div class="form-group">
+                        <label>Size EU</label>
+                        <input type="text" id="sizeEu">
+                    </div>
+                </div>
+
+                <div class="form-row form-row-2">
+                    <div class="form-group">
+                        <label>Chiều cao (cm)</label>
+                        <input type="text" id="sizeHeight" placeholder="Ví dụ: 156 - 162">
+                    </div>
+                    <div class="form-group">
+                        <label>Cân nặng (kg)</label>
+                        <input type="text" id="sizeWeight" placeholder="Ví dụ: 50 - 55">
+                    </div>
+                </div>
+
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label>Ngực (cm)</label>
+                        <input type="text" id="sizeChest">
+                    </div>
+                    <div class="form-group">
+                        <label>Eo (cm)</label>
+                        <input type="text" id="sizeWaist">
+                    </div>
+                    <div class="form-group">
+                        <label>Hông (cm)</label>
+                        <input type="text" id="sizeHip">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ghi chú</label>
+                    <textarea id="sizeFitNote" placeholder="Ghi chú thêm về form hoặc model mặc thử"></textarea>
+                </div>
+
+                <div class="form-group checkbox-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="sizeActive" checked>
+                        <span>Kích hoạt size này</span>
+                    </label>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeSizeModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu Size</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script>
+        let allSizes = [];
+        let editingSizeId = null;
+
+        function getErrorMessage(error, fallback = 'Có lỗi xảy ra') {
+            return error?.message || fallback;
+        }
+
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+
+            if (!userInfo || !authToken) {
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                if (user.role !== 'admin') {
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
+                }
+            } catch (error) {
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        async function loadSizes() {
+            try {
+                const response = await window.SizeAPI.getSizes();
+                allSizes = Array.isArray(response.data) ? response.data : [];
+                renderSizes();
+            } catch (error) {
+                document.getElementById('sizeTableBody').innerHTML = `<tr><td colspan="10" class="table-empty">${getErrorMessage(error, 'Không thể tải bảng size')}</td></tr>`;
+            }
+        }
+
+        function renderSizes() {
+            const body = document.getElementById('sizeTableBody');
+            if (!allSizes.length) {
+                body.innerHTML = '<tr><td colspan="10" class="table-empty">Chưa có dữ liệu size</td></tr>';
+                return;
+            }
+
+            body.innerHTML = allSizes.map((size) => `
+                <tr>
+                    <td><strong>${size.name}</strong></td>
+                    <td>${size.usSize || '-'}</td>
+                    <td>${size.euSize || '-'}</td>
+                    <td>${size.height || '-'}</td>
+                    <td>${size.weight || '-'}</td>
+                    <td>${size.chest || '-'}</td>
+                    <td>${size.waist || '-'}</td>
+                    <td>${size.hip || '-'}</td>
+                    <td><span class="size-status ${size.isActive ? 'active' : 'inactive'}">${size.isActive ? 'Đang bật' : 'Đang tắt'}</span></td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding:8px 12px;" onclick="editSize('${size._id}')">Sửa</button>
+                        <button class="btn btn-danger" style="padding:8px 12px;" onclick="deleteSize('${size._id}')">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openSizeModal() {
+            editingSizeId = null;
+            document.getElementById('sizeModalTitle').textContent = 'Thêm Size Mới';
+            document.getElementById('sizeForm').reset();
+            document.getElementById('sizeActive').checked = true;
+            document.getElementById('sizeModal').classList.add('active');
+        }
+
+        function closeSizeModal() {
+            document.getElementById('sizeModal').classList.remove('active');
+        }
+
+        function editSize(id) {
+            const size = allSizes.find((item) => item._id === id);
+            if (!size) {
+                return;
+            }
+
+            editingSizeId = id;
+            document.getElementById('sizeModalTitle').textContent = 'Chỉnh Sửa Size';
+            document.getElementById('sizeName').value = size.name || '';
+            document.getElementById('sizeUs').value = size.usSize || '';
+            document.getElementById('sizeEu').value = size.euSize || '';
+            document.getElementById('sizeHeight').value = size.height || '';
+            document.getElementById('sizeWeight').value = size.weight || '';
+            document.getElementById('sizeChest').value = size.chest || '';
+            document.getElementById('sizeWaist').value = size.waist || '';
+            document.getElementById('sizeHip').value = size.hip || '';
+            document.getElementById('sizeFitNote').value = size.fitNote || '';
+            document.getElementById('sizeActive').checked = size.isActive !== false;
+            document.getElementById('sizeModal').classList.add('active');
+        }
+
+        async function deleteSize(id) {
+            if (!confirm('Bạn có chắc chắn muốn xóa size này?')) {
+                return;
+            }
+
+            try {
+                await window.SizeAPI.deleteSize(id);
+                await loadSizes();
+            } catch (error) {
+                alert(getErrorMessage(error, 'Không thể xóa size'));
+            }
+        }
+
+        function buildPayload() {
+            return {
+                name: document.getElementById('sizeName').value,
+                usSize: document.getElementById('sizeUs').value,
+                euSize: document.getElementById('sizeEu').value,
+                height: document.getElementById('sizeHeight').value,
+                weight: document.getElementById('sizeWeight').value,
+                chest: document.getElementById('sizeChest').value,
+                waist: document.getElementById('sizeWaist').value,
+                hip: document.getElementById('sizeHip').value,
+                fitNote: document.getElementById('sizeFitNote').value,
+                isActive: document.getElementById('sizeActive').checked
+            };
+        }
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!validateAdminAccess()) {
+                return;
+            }
+
+            loadSizes();
+
+            document.getElementById('sizeForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                try {
+                    const payload = buildPayload();
+                    if (editingSizeId) {
+                        await window.SizeAPI.updateSize(editingSizeId, payload);
+                    } else {
+                        await window.SizeAPI.createSize(payload);
+                    }
+
+                    closeSizeModal();
+                    await loadSizes();
+                } catch (error) {
+                    alert(getErrorMessage(error, 'Không thể lưu size'));
+                }
+            });
+        });
+
+        document.getElementById('sizeModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeSizeModal();
+            }
+        });
+
+        window.addEventListener('pageshow', function() {
+            validateAdminAccess(false);
+        });
+
+        window.openSizeModal = openSizeModal;
+        window.closeSizeModal = closeSizeModal;
+        window.editSize = editSize;
+        window.deleteSize = deleteSize;
+        window.logout = logout;
+    </script>
+</body>
+</html>

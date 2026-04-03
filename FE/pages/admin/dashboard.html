@@ -17,6 +17,7 @@
                 <li><a href="dashboard.html" class="active"><i class="fas fa-chart-line"></i> DASHBOARD</a></li>
                 <li><a href="products.html"><i class="fas fa-box"></i> SẢN PHẨM</a></li>
                 <li><a href="categories.html"><i class="fas fa-tags"></i> DANH MỤC</a></li>
+                <li><a href="sizes.html"><i class="fas fa-ruler-combined"></i> BẢNG SIZE</a></li>
                 <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
                 <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
@@ -39,38 +40,8 @@
             </div>
 
             <!-- STATS -->
-            <div class="stats-grid">
-                <div class="stat-card revenue">
-                    <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
-                    <div class="stat-content">
-                        <h3>Doanh Thu</h3>
-                        <div class="value">250.5M</div>
-                    </div>
-                </div>
-
-                <div class="stat-card orders">
-                    <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
-                    <div class="stat-content">
-                        <h3>Đơn Hàng</h3>
-                        <div class="value">1,234</div>
-                    </div>
-                </div>
-
-                <div class="stat-card users">
-                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
-                    <div class="stat-content">
-                        <h3>Khách Hàng</h3>
-                        <div class="value">5,680</div>
-                    </div>
-                </div>
-
-                <div class="stat-card products">
-                    <div class="stat-icon"><i class="fas fa-box"></i></div>
-                    <div class="stat-content">
-                        <h3>Sản Phẩm</h3>
-                        <div class="value">342</div>
-                    </div>
-                </div>
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be loaded here -->
             </div>
 
             <!-- RECENT ORDERS -->
@@ -87,37 +58,8 @@
                             <th>Hành Động</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>#ORD001</strong></td>
-                            <td>Nguyễn Văn A</td>
-                            <td>2.590.000₫</td>
-                            <td><span class="badge badge-success">Đã Giao</span></td>
-                            <td>01/04/2024</td>
-                            <td>
-                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Xem</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>#ORD002</strong></td>
-                            <td>Trần Thị B</td>
-                            <td>1.890.000₫</td>
-                            <td><span class="badge badge-warning">Chờ Giao</span></td>
-                            <td>01/04/2024</td>
-                            <td>
-                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Xem</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>#ORD003</strong></td>
-                            <td>Lê Văn C</td>
-                            <td>3.120.000₫</td>
-                            <td><span class="badge badge-info">Chờ Xác Nhận</span></td>
-                            <td>31/03/2024</td>
-                            <td>
-                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Xem</button>
-                            </td>
-                        </tr>
+                    <tbody id="recentOrdersBody">
+                        <tr><td colspan="6" style="text-align: center; padding: 20px;">Đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -136,37 +78,8 @@
                             <th>Hành Động</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Áo Blouse Lụa</strong></td>
-                            <td>AB001</td>
-                            <td>1.290.000₫</td>
-                            <td>156</td>
-                            <td><span class="badge badge-success">45</span></td>
-                            <td>
-                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Sửa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Quần Jean Xanh</strong></td>
-                            <td>QJ001</td>
-                            <td>1.890.000₫</td>
-                            <td>128</td>
-                            <td><span class="badge badge-success">32</span></td>
-                            <td>
-                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Sửa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Đầm Công Sở</strong></td>
-                            <td>DC001</td>
-                            <td>2.390.000₫</td>
-                            <td>89</td>
-                            <td><span class="badge badge-warning">8</span></td>
-                            <td>
-                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Sửa</button>
-                            </td>
-                        </tr>
+                    <tbody id="topProductsBody">
+                        <tr><td colspan="6" style="text-align: center; padding: 20px;">Đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -174,51 +87,226 @@
     </div>
 
     <script>
+        const API_BASE_URL = 'http://localhost:5000/api/v1';
+
+        // Load dashboard stats and data
+        async function loadDashboardData() {
+            try {
+                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+                
+                // Fetch orders for stats and recent orders
+                const ordersResponse = await fetch(`${API_BASE_URL}/orders/admin/all`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const ordersData = await ordersResponse.json();
+                const orders = ordersData.data || [];
+                
+                // Fetch users for customer count
+                const usersResponse = await fetch(`${API_BASE_URL}/users`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const usersData = usersResponse.json();
+                const users = (await usersData).data || [];
+                
+                // Fetch products for product count
+                const productsResponse = await fetch(`${API_BASE_URL}/products`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const productsData = await productsResponse.json();
+                const products = productsData.data || [];
+                
+                // Calculate stats
+                const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+                const totalOrders = orders.length;
+                const totalCustomers = users.length;
+                const totalProducts = products.length;
+                
+                // Render stats
+                renderStats(totalRevenue, totalOrders, totalCustomers, totalProducts);
+                
+                // Render recent orders
+                renderRecentOrders(orders.slice(0, 5));
+                
+                // Render top products
+                renderTopProducts(products.slice(0, 5));
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Render stats cards
+        function renderStats(revenue, orders, customers, products) {
+            const statsGrid = document.getElementById('statsGrid');
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card revenue">
+                    <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                    <div class="stat-content">
+                        <h3>Doanh Thu</h3>
+                        <div class="value">${(revenue / 1000000).toFixed(1)}M</div>
+                    </div>
+                </div>
+
+                <div class="stat-card orders">
+                    <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="stat-content">
+                        <h3>Đơn Hàng</h3>
+                        <div class="value">${orders}</div>
+                    </div>
+                </div>
+
+                <div class="stat-card users">
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-content">
+                        <h3>Khách Hàng</h3>
+                        <div class="value">${customers}</div>
+                    </div>
+                </div>
+
+                <div class="stat-card products">
+                    <div class="stat-icon"><i class="fas fa-box"></i></div>
+                    <div class="stat-content">
+                        <h3>Sản Phẩm</h3>
+                        <div class="value">${products}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render recent orders
+        function renderRecentOrders(orders) {
+            const tbody = document.getElementById('recentOrdersBody');
+            
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Không có đơn hàng</td></tr>';
+                return;
+            }
+            
+            const statusMap = {
+                'pending': 'Chờ Xác Nhận',
+                'processing': 'Đang Xử Lý',
+                'shipped': 'Đã Gửi',
+                'delivered': 'Đã Giao',
+                'cancelled': 'Đã Hủy'
+            };
+            
+            const statusBadgeMap = {
+                'pending': 'badge-info',
+                'processing': 'badge-warning',
+                'shipped': 'badge-warning',
+                'delivered': 'badge-success',
+                'cancelled': 'badge-danger'
+            };
+            
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td><strong>#${order._id?.slice(-6).toUpperCase()}</strong></td>
+                    <td>${order.user?.fullName || 'N/A'}</td>
+                    <td>${(order.totalAmount || 0).toLocaleString('vi-VN')}₫</td>
+                    <td><span class="badge ${statusBadgeMap[order.orderStatus] || 'badge-info'}">${statusMap[order.orderStatus] || order.orderStatus}</span></td>
+                    <td>${new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td>
+                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Xem</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Render top products
+        function renderTopProducts(products) {
+            const tbody = document.getElementById('topProductsBody');
+            
+            if (products.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Không có sản phẩm</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = products.map(product => {
+                const stock = product.quantity || 0;
+                const badgeClass = stock > 20 ? 'badge-success' : stock > 0 ? 'badge-warning' : 'badge-danger';
+                const stockStatus = stock > 20 ? 'Còn Hàng' : stock > 0 ? 'Sắp Hết' : 'Hết Hàng';
+                
+                return `
+                    <tr>
+                        <td><strong>${product.name || 'N/A'}</strong></td>
+                        <td>${product.sku || 'N/A'}</td>
+                        <td>${(product.price || 0).toLocaleString('vi-VN')}₫</td>
+                        <td>0</td>
+                        <td><span class="badge ${badgeClass}">${stock}</span></td>
+                        <td>
+                            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Sửa</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         function goToProducts() {
             window.location.href = 'products.html';
         }
 
         function toggleNotification() {
-            alert('Thông báo: 5 đơn hàng chờ xác nhận');
+            alert('Thông báo: Bạn có các đơn hàng chờ xác nhận');
         }
 
         function logout() {
             if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-                // Remove all auth-related keys
-                localStorage.removeItem('marc_auth_token');
-                localStorage.removeItem('marc_refresh_token');
-                localStorage.removeItem('marc_user_info');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('userInfo');
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
-                
-                window.location.href = '../../pages/auth/login.html';
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
             }
         }
 
-        // Admin auth check - prevent infinite redirect loop
-        document.addEventListener('DOMContentLoaded', function() {
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
             const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
             const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
-            
+
             if (!userInfo || !authToken) {
-                window.location.href = '../../pages/auth/login.html';
-                return;
+                window.location.replace('../../pages/auth/login.html');
+                return false;
             }
 
             try {
                 const user = JSON.parse(userInfo);
-                // Check if user is admin
                 if (user.role !== 'admin') {
-                    alert('Bạn không có quyền truy cập trang này!');
-                    window.location.href = '../../pages/customer/index.html';
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
                 }
             } catch (error) {
                 console.error('Error parsing user info:', error);
-                window.location.href = '../../pages/auth/login.html';
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
             }
+
+            return true;
+        }
+
+        // Auth check and load data
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!validateAdminAccess()) {
+                return;
+            }
+
+            loadDashboardData();
+        });
+
+        window.addEventListener('pageshow', function() {
+            validateAdminAccess(false);
         });
     </script>
 </body>

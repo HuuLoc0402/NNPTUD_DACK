@@ -7,315 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../css/common.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #DC3545;
-            --success: #28a745;
-            --info: #17a2b8;
-            --danger: #dc3545;
-            --dark: #2C3E50;
-            --light: #F8F7F4;
-            --border: #ddd;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f5f5;
-            color: var(--dark);
-        }
-
-        .admin-container {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            background: var(--dark);
-            color: white;
-            padding: 30px 0;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .sidebar-logo {
-            font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            font-weight: 700;
-            padding: 20px 30px;
-            margin-bottom: 30px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .sidebar-menu {
-            list-style: none;
-        }
-
-        .sidebar-menu a {
-            display: block;
-            padding: 15px 30px;
-            color: rgba(255,255,255,0.7);
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 14px;
-            border-left: 3px solid transparent;
-        }
-
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
-            color: white;
-            background-color: rgba(255,255,255,0.1);
-            border-left-color: var(--primary);
-        }
-
-        .main-content {
-            padding: 30px;
-            overflow-y: auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            background: white;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            background: var(--primary);
-            color: white;
-            transition: all 0.3s;
-        }
-
-        .btn:hover {
-            background: #c82333;
-        }
-
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        .category-card {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.3s;
-        }
-
-        .category-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-
-        .category-icon {
-            width: 100%;
-            height: 150px;
-            background: linear-gradient(135deg, var(--primary), #ff6b6b);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            color: white;
-        }
-
-        .category-content {
-            padding: 20px;
-        }
-
-        .category-name {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: var(--dark);
-        }
-
-        .category-info {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        .category-info span {
-            display: block;
-            margin: 5px 0;
-        }
-
-        .category-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .category-actions button {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .edit-btn {
-            background: var(--info);
-            color: white;
-        }
-
-        .delete-btn {
-            background: var(--danger);
-            color: white;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 100%;
-        }
-
-        .modal-header {
-            margin-bottom: 25px;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 15px;
-        }
-
-        .modal-header h2 {
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 13px;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 25px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border);
-        }
-
-        .modal-footer button {
-            padding: 10px 25px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        .btn-cancel {
-            background: #ddd;
-            color: var(--dark);
-        }
-
-        .btn-submit {
-            background: var(--primary);
-            color: white;
-        }
-
-        @media (max-width: 1200px) {
-            .categories-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .admin-container {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                position: fixed;
-                left: -250px;
-                z-index: 100;
-            }
-
-            .categories-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .header {
-                flex-direction: column;
-                gap: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .categories-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../../css/admin/categories.css">
 </head>
 <body>
     <div class="admin-container">
@@ -325,6 +17,7 @@
                 <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
                 <li><a href="products.html"><i class="fas fa-box"></i> Sản Phẩm</a></li>
                 <li><a href="categories.html" class="active"><i class="fas fa-tags"></i> Danh Mục</a></li>
+                <li><a href="sizes.html"><i class="fas fa-ruler-combined"></i> Bảng Size</a></li>
                 <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> Đơn Hàng</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> Người Dùng</a></li>
                 <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Thống Kê</a></li>
@@ -340,96 +33,8 @@
                 <button class="btn" onclick="openCategoryModal()"><i class="fas fa-plus"></i> Thêm Danh Mục</button>
             </div>
 
-            <div class="categories-grid">
-                <div class="category-card">
-                    <div class="category-icon">👔</div>
-                    <div class="category-content">
-                        <div class="category-name">Áo</div>
-                        <div class="category-info">
-                            <span><strong>156</strong> sản phẩm</span>
-                            <span>Cập nhật: 01/04/2024</span>
-                        </div>
-                        <div class="category-actions">
-                            <button class="edit-btn" onclick="editCategory(1)">Sửa</button>
-                            <button class="delete-btn" onclick="deleteCategory(1)">Xóa</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-card">
-                    <div class="category-icon">📦</div>
-                    <div class="category-content">
-                        <div class="category-name">BackinStock</div>
-                        <div class="category-info">
-                            <span><strong>89</strong> sản phẩm</span>
-                            <span>Cập nhật: 31/03/2024</span>
-                        </div>
-                        <div class="category-actions">
-                            <button class="edit-btn" onclick="editCategory(2)">Sửa</button>
-                            <button class="delete-btn" onclick="deleteCategory(2)">Xóa</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-card">
-                    <div class="category-icon">👚</div>
-                    <div class="category-content">
-                        <div class="category-name">Quần</div>
-                        <div class="category-info">
-                            <span><strong>124</strong> sản phẩm</span>
-                            <span>Cập nhật: 01/04/2024</span>
-                        </div>
-                        <div class="category-actions">
-                            <button class="edit-btn" onclick="editCategory(3)">Sửa</button>
-                            <button class="delete-btn" onclick="deleteCategory(3)">Xóa</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-card">
-                    <div class="category-icon">👗</div>
-                    <div class="category-content">
-                        <div class="category-name">Đầm</div>
-                        <div class="category-info">
-                            <span><strong>95</strong> sản phẩm</span>
-                            <span>Cập nhật: 30/03/2024</span>
-                        </div>
-                        <div class="category-actions">
-                            <button class="edit-btn" onclick="editCategory(4)">Sửa</button>
-                            <button class="delete-btn" onclick="deleteCategory(4)">Xóa</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-card">
-                    <div class="category-icon">🏷️</div>
-                    <div class="category-content">
-                        <div class="category-name">Váy</div>
-                        <div class="category-info">
-                            <span><strong>67</strong> sản phẩm</span>
-                            <span>Cập nhật: 29/03/2024</span>
-                        </div>
-                        <div class="category-actions">
-                            <button class="edit-btn" onclick="editCategory(5)">Sửa</button>
-                            <button class="delete-btn" onclick="deleteCategory(5)">Xóa</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-card">
-                    <div class="category-icon">✨</div>
-                    <div class="category-content">
-                        <div class="category-name">SIGNATURE</div>
-                        <div class="category-info">
-                            <span><strong>45</strong> sản phẩm</span>
-                            <span>Cập nhật: 28/03/2024</span>
-                        </div>
-                        <div class="category-actions">
-                            <button class="edit-btn" onclick="editCategory(6)">Sửa</button>
-                            <button class="delete-btn" onclick="deleteCategory(6)">Xóa</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="categories-grid" id="categoriesGrid">
+                <!-- Categories will be loaded here -->
             </div>
         </div>
     </div>
@@ -457,16 +62,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Icon/Emoji</label>
-                    <input type="text" id="categoryIcon" placeholder="VD: 👔 hoặc /path/to/icon.png">
-                </div>
-
-                <div class="form-group">
-                    <label>Vị Trí Hiển Thị</label>
-                    <input type="number" id="categoryPosition" placeholder="Nhập thứ tự" min="1">
-                </div>
-
-                <div class="form-group">
                     <label>
                         <input type="checkbox" id="categoryActive" checked>
                         Kích hoạt danh mục này
@@ -481,11 +76,80 @@
         </div>
     </div>
 
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
     <script>
+        let allCategories = [];
+        let editingCategoryId = null;
+
+        function getErrorMessage(error, fallback = 'Có lỗi xảy ra') {
+            return error?.message || fallback;
+        }
+
+        function getCategoryImageUrl(category) {
+            return window.CONFIG?.resolveMediaUrl(
+                category.image,
+                'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Crect fill=%22%23ddd%22 width=%22150%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2240%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3E%F0%9F%93%B7%3C/text%3E%3C/svg%3E'
+            ) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Crect fill=%22%23ddd%22 width=%22150%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2240%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3E%F0%9F%93%B7%3C/text%3E%3C/svg%3E';
+        }
+
+        // Load categories from API
+        async function loadCategories() {
+            try {
+                const data = await window.CategoryAPI.getCategories();
+                
+                if (data.success && Array.isArray(data.data)) {
+                    allCategories = data.data;
+                    renderCategories(allCategories);
+                } else {
+                    document.getElementById('categoriesGrid').innerHTML = 
+                        '<div style="grid-column: 1/-1; text-align: center; padding: 40px;">Không có danh mục</div>';
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                document.getElementById('categoriesGrid').innerHTML = 
+                    `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: red;">${getErrorMessage(error, 'Lỗi tải dữ liệu')}</div>`;
+            }
+        }
+
+        // Render categories to grid
+        function renderCategories(categories) {
+            const grid = document.getElementById('categoriesGrid');
+            
+            if (categories.length === 0) {
+                grid.innerHTML = '<div class="empty-state">Không có danh mục</div>';
+                return;
+            }
+            
+            grid.innerHTML = categories.map(category => {
+                const imageUrl = getCategoryImageUrl(category);
+                
+                return `
+                    <div class="category-card">
+                        <div class="category-icon" style="background-image: url('${imageUrl}'); background-color: #f5f5f5;">
+                        </div>
+                        <div class="category-content">
+                            <div class="category-name">${category.name}</div>
+                            <div class="category-info">
+                                <span>${category.description || 'Không có mô tả'}</span>
+                                <span>Cập nhật: ${new Date(category.updatedAt).toLocaleDateString('vi-VN')}</span>
+                            </div>
+                            <div class="category-actions">
+                                <button class="edit-btn" onclick="editCategory('${category._id}')">Sửa</button>
+                                <button class="delete-btn" onclick="deleteCategory('${category._id}')">Xóa</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function openCategoryModal() {
+            editingCategoryId = null;
             document.getElementById('categoryModal').classList.add('active');
             document.getElementById('modalTitle').textContent = 'Thêm Danh Mục Mới';
             document.getElementById('categoryForm').reset();
+            document.getElementById('categoryImage').value = '';
         }
 
         function closeCategoryModal() {
@@ -493,27 +157,88 @@
         }
 
         function editCategory(id) {
-            openCategoryModal();
+            const category = allCategories.find(c => c._id === id);
+            if (!category) {
+                alert('Không tìm thấy danh mục');
+                return;
+            }
+            
+            editingCategoryId = id;
             document.getElementById('modalTitle').textContent = 'Chỉnh Sửa Danh Mục';
+            document.getElementById('categoryName').value = category.name;
+            document.getElementById('categoryDescription').value = category.description || '';
+            document.getElementById('categoryActive').checked = category.isActive !== false;
+            document.getElementById('categoryModal').classList.add('active');
         }
 
         function deleteCategory(id) {
             if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
-                alert('Đã xóa danh mục!');
+                deleteFromAPI(id);
             }
         }
 
-        function logout() {
-            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-                localStorage.removeItem('token');
-                window.location.href = '../auth/login.html';
+        // Delete category via API
+        async function deleteFromAPI(id) {
+            try {
+                const data = await window.CategoryAPI.deleteCategory(id);
+                if (data.success) {
+                    alert('Đã xóa danh mục thành công!');
+                    await loadCategories();
+                } else {
+                    alert('Lỗi: ' + (data.message || 'Không thể xóa'));
+                }
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                alert('Lỗi khi xóa danh mục: ' + getErrorMessage(error, 'Không thể xóa danh mục'));
             }
         }
 
-        document.getElementById('categoryForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('Lưu danh mục thành công!');
-            closeCategoryModal();
+        // Handle form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!validateAdminAccess()) {
+                return;
+            }
+
+            loadCategories();
+
+            // Form submit
+            document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('categoryName').value.trim();
+                if (!name) {
+                    alert('Vui lòng nhập tên danh mục');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('description', document.getElementById('categoryDescription').value);
+                formData.append('isActive', document.getElementById('categoryActive').checked);
+                
+                const imageFile = document.getElementById('categoryImage').files[0];
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+
+                try {
+                    const data = editingCategoryId
+                        ? await window.CategoryAPI.updateCategoryForm(editingCategoryId, formData)
+                        : await window.CategoryAPI.createCategoryForm(formData);
+                    console.log('API Response:', data);
+                    
+                    if (data.success) {
+                        alert(editingCategoryId ? 'Cập nhật danh mục thành công!' : 'Thêm danh mục thành công!');
+                        closeCategoryModal();
+                        await loadCategories();
+                    } else {
+                        alert('Lỗi: ' + (data.message || 'Không thể lưu'));
+                    }
+                } catch (error) {
+                    console.error('Error saving category:', error);
+                    alert('Lỗi khi lưu danh mục: ' + getErrorMessage(error, 'Không thể lưu danh mục'));
+                }
+            });
         });
 
         document.getElementById('categoryModal').addEventListener('click', function(e) {
@@ -521,6 +246,62 @@
                 closeCategoryModal();
             }
         });
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+            }
+        }
+
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+
+            if (!userInfo || !authToken) {
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                if (user.role !== 'admin') {
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error parsing user info:', error);
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        window.addEventListener('pageshow', function() {
+            validateAdminAccess(false);
+        });
+
+        window.openCategoryModal = openCategoryModal;
+        window.closeCategoryModal = closeCategoryModal;
+        window.editCategory = editCategory;
+        window.deleteCategory = deleteCategory;
+        window.logout = logout;
     </script>
 </body>
 </html>

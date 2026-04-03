@@ -8,34 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../css/common.css">
     <link rel="stylesheet" href="../../css/admin/unified.css">
-    <style>
-        body {
-            background-color: #f5f5f5;
-        }
-        
-        .product-image {
-            width: 40px;
-            height: 40px;
-            border-radius: 4px;
-            object-fit: cover;
-        }
-        
-        /* Inline status badges keep their original colors */
-        tbody .badge-success {
-            background: #d4edda !important;
-            color: #155724 !important;
-        }
-        
-        tbody .badge-warning {
-            background: #fff3cd !important;
-            color: #856404 !important;
-        }
-        
-        tbody .badge-danger {
-            background: #f8d7da !important;
-            color: #721c24 !important;
-        }
-    </style>
+    <link rel="stylesheet" href="../../css/admin/products.css">
 </head>
 <body>
     <div class="admin-container">
@@ -46,6 +19,7 @@
                 <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> DASHBOARD</a></li>
                 <li><a href="products.html" class="active"><i class="fas fa-box"></i> SẢN PHẨM</a></li>
                 <li><a href="categories.html"><i class="fas fa-tags"></i> DANH MỤC</a></li>
+                <li><a href="sizes.html"><i class="fas fa-ruler-combined"></i> BẢNG SIZE</a></li>
                 <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
                 <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
@@ -99,12 +73,7 @@
                 </table>
 
                 <!-- PAGINATION -->
-                <div class="pagination">
-                    <button onclick="prevPage()"><i class="fas fa-chevron-left"></i></button>
-                    <button class="active">1</button>
-                    <button>2</button>
-                    <button>3</button>
-                    <button onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>
+                <div class="pagination" id="pagination">
                 </div>
             </div>
         </div>
@@ -158,34 +127,33 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Mô Tả</label>
-                    <textarea id="productDescription" placeholder="Nhập mô tả sản phẩm"></textarea>
+                    <label>Mô Tả *</label>
+                    <textarea id="productDescription" placeholder="Nhập mô tả sản phẩm" required></textarea>
                 </div>
 
                 <div class="form-group">
                     <label>Hình Ảnh</label>
                     <input type="file" id="productImage" accept="image/*">
+                    <small class="field-hint" id="imageFieldHint">Ảnh là bắt buộc khi thêm mới sản phẩm.</small>
                 </div>
 
                 <div class="form-group">
-                    <label>Kích Cỡ</label>
-                    <input type="text" id="productSize" placeholder="VD: S, M, L, XL (cách nhau bằng dấu phấy)">
-                </div>
-
-                <div class="form-group">
-                    <label>Màu Sắc</label>
-                    <input type="text" id="productColor" placeholder="VD: Đen, Trắng, Xanh (cách nhau bằng dấu phấy)">
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Thương Hiệu</label>
-                        <input type="text" id="productBrand" placeholder="Nhập thương hiệu">
-                    </div>
-                    <div class="form-group">
-                        <label>Xuất Xứ</label>
-                        <input type="text" id="productOrigin" placeholder="Nhập nước xuất xứ">
-                    </div>
+                    <label>Kích Cỡ *</label>
+                    <select id="productSize" required>
+                        <option value="">Chọn kích cỡ</option>
+                        <option value="XXS">XXS</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                        <option value="XXXL">XXXL</option>
+                        <option value="4XL">4XL</option>
+                        <option value="5XL">5XL</option>
+                        <option value="6XL">6XL</option>
+                        <option value="One Size">One Size</option>
+                    </select>
                 </div>
 
                 <div class="modal-footer">
@@ -196,17 +164,48 @@
         </div>
     </div>
 
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api/v1';
         let allProducts = [];
+        let allCategories = [];
+        let editingProductId = null;
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        function getErrorMessage(error, fallback = 'Có lỗi xảy ra') {
+            return error?.message || fallback;
+        }
+
+        function getImageUrl(value) {
+            return window.CONFIG?.resolveMediaUrl(value, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function getProductImage(product) {
+            return window.CONFIG?.resolveProductImage(product, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function getCategoryName(product) {
+            if (product.category?.name) {
+                return product.category.name;
+            }
+
+            const categoryId = product.category?._id || product.categoryId || product.category;
+            const matchedCategory = allCategories.find((category) => String(category._id) === String(categoryId));
+            return matchedCategory?.name || 'N/A';
+        }
+
+        function getStockValue(product) {
+            return Number(product.stock ?? product.quantity ?? 0);
+        }
 
         // Load categories on page load
         async function loadCategories() {
             try {
-                const response = await fetch(`${API_BASE_URL}/categories`);
-                const data = await response.json();
+                const data = await window.CategoryAPI.getCategories();
                 
                 if (data.success && data.data) {
+                    allCategories = data.data;
                     const categoryFilter = document.getElementById('categoryFilter');
                     const productCategory = document.getElementById('productCategory');
                     
@@ -234,24 +233,18 @@
                 }
             } catch (error) {
                 console.error('Error loading categories:', error);
+                alert('Lỗi tải danh mục: ' + getErrorMessage(error, 'Không thể tải danh mục'));
             }
         }
 
         // Load products from API
         async function loadProducts() {
             try {
-                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
-                const response = await fetch(`${API_BASE_URL}/products`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await response.json();
+                const data = await window.ProductAPI.getProducts({ page: 1, limit: 100 });
                 
                 if (data.success && Array.isArray(data.data)) {
                     allProducts = data.data;
-                    renderProducts(allProducts);
+                    filterProducts();
                 } else {
                     document.getElementById('productTableBody').innerHTML = 
                         '<tr><td colspan="8" style="text-align: center;">Không có sản phẩm</td></tr>';
@@ -259,7 +252,7 @@
             } catch (error) {
                 console.error('Error loading products:', error);
                 document.getElementById('productTableBody').innerHTML = 
-                    '<tr><td colspan="8" style="text-align: center; color: red;">Lỗi tải dữ liệu</td></tr>';
+                    `<tr><td colspan="8" style="text-align: center; color: red;">${getErrorMessage(error, 'Lỗi tải dữ liệu')}</td></tr>`;
             }
         }
 
@@ -269,24 +262,25 @@
             
             if (products.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Không có sản phẩm</td></tr>';
+                renderPagination(0);
                 return;
             }
             
             tbody.innerHTML = products.map(product => {
-                const stockStatus = product.stock > 20 ? 'Còn Hàng' : 
-                                   product.stock > 0 ? 'Sắp Hết' : 'Hết Hàng';
-                const badgeClass = product.stock > 20 ? 'badge-success' : 
-                                  product.stock > 0 ? 'badge-warning' : 'badge-danger';
+                const stock = getStockValue(product);
+                const stockStatus = stock > 20 ? 'Còn Hàng' : stock > 0 ? 'Sắp Hết' : 'Hết Hàng';
+                const badgeClass = stock > 20 ? 'badge-success' : stock > 0 ? 'badge-warning' : 'badge-danger';
+                const imageUrl = getProductImage(product);
                 
                 return `
                     <tr>
-                        <td><img class="product-image" src="${product.image || '../../assets/images/banner1.png'}" alt="Product"></td>
+                        <td><img class="product-image" src="${imageUrl}" alt="Product" onerror="this.src='../../assets/images/banner1.png'"></td>
                         <td>${product.name || 'N/A'}</td>
                         <td>${product.sku || 'N/A'}</td>
-                        <td>${product.category?.name || 'N/A'}</td>
-                        <td>${(product.price || 0).toLocaleString('vi-VN')}₫</td>
-                        <td>${product.stock || 0}</td>
-                        <td><span class="badge ${badgeClass}">${stockStatus}</span></td>
+                        <td>${getCategoryName(product)}</td>
+                        <td>${Number(product.currentPrice || product.price || 0).toLocaleString('vi-VN')}₫</td>
+                        <td>${stock}</td>
+                        <td><span class="status-badge badge ${badgeClass}">${stockStatus}</span></td>
                         <td>
                             <button class="btn btn-sm btn-info" onclick="editProduct('${product._id}')">Sửa</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteProduct('${product._id}')">Xóa</button>
@@ -296,10 +290,76 @@
             }).join('');
         }
 
+        function getFilteredProducts() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const category = document.getElementById('categoryFilter').value;
+            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+
+            return allProducts.filter(product => {
+                const name = String(product.name || '').toLowerCase();
+                const description = String(product.description || '').toLowerCase();
+                const categoryId = product.category?._id || product.categoryId || product.category;
+                const price = Number(product.currentPrice || product.price || 0);
+
+                const matchSearch = !search || name.includes(search) || description.includes(search);
+                const matchCategory = !category || String(categoryId) === String(category);
+                const matchPrice = price >= minPrice && price <= maxPrice;
+                return matchSearch && matchCategory && matchPrice;
+            });
+        }
+
+        function renderPagination(totalItems) {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) {
+                return;
+            }
+
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage -= 1;
+                    filterProducts();
+                }
+            });
+            pagination.appendChild(prevButton);
+
+            for (let page = 1; page <= totalPages; page += 1) {
+                const button = document.createElement('button');
+                button.textContent = page;
+                if (page === currentPage) {
+                    button.className = 'active';
+                }
+                button.addEventListener('click', () => {
+                    currentPage = page;
+                    filterProducts();
+                });
+                pagination.appendChild(button);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage += 1;
+                    filterProducts();
+                }
+            });
+            pagination.appendChild(nextButton);
+        }
+
         function openProductModal() {
+            editingProductId = null;
             document.getElementById('productModal').classList.add('active');
             document.getElementById('modalTitle').textContent = 'Thêm Sản Phẩm Mới';
             document.getElementById('productForm').reset();
+            document.getElementById('imageFieldHint').textContent = 'Ảnh là bắt buộc khi thêm mới sản phẩm.';
         }
 
         function closeProductModal() {
@@ -307,63 +367,144 @@
         }
 
         function editProduct(id) {
+            const product = allProducts.find((item) => String(item._id) === String(id));
+            if (!product) {
+                alert('Không tìm thấy sản phẩm');
+                return;
+            }
+
+            editingProductId = id;
             document.getElementById('productModal').classList.add('active');
             document.getElementById('modalTitle').textContent = 'Chỉnh Sửa Sản Phẩm';
-            // Load product data here
-            alert(`Chỉnh sửa sản phẩm #${id}`);
+            document.getElementById('productName').value = product.name || '';
+            document.getElementById('productSKU').value = product.sku || '';
+            document.getElementById('productCategory').value = product.category?._id || product.categoryId || product.category || '';
+            document.getElementById('productPrice').value = product.price || product.currentPrice || 0;
+            document.getElementById('productStock').value = getStockValue(product);
+            document.getElementById('productDiscount').value = product.discount || 0;
+            document.getElementById('productDescription').value = product.description || '';
+            document.getElementById('productSize').value = Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M';
+            document.getElementById('productImage').value = '';
+            document.getElementById('imageFieldHint').textContent = 'Có thể bỏ trống ảnh nếu bạn không muốn thay đổi ảnh hiện tại.';
         }
 
-        function deleteProduct(id) {
+        async function deleteProduct(id) {
             if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-                alert(`Đã xóa sản phẩm #${id}`);
+                try {
+                    await window.ProductAPI.deleteProduct(id);
+                    allProducts = allProducts.filter((product) => String(product._id) !== String(id));
+                    filterProducts();
+                    alert('Đã xóa sản phẩm thành công!');
+                } catch (error) {
+                    console.error('Error deleting product:', error);
+                    alert(`Xóa sản phẩm thất bại: ${getErrorMessage(error, 'Không thể xóa sản phẩm')}`);
+                }
             }
         }
 
         function filterProducts() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const category = document.getElementById('categoryFilter').value;
-            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
-            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
-            
-            const filtered = allProducts.filter(product => {
-                const matchSearch = !search || product.name.toLowerCase().includes(search);
-                const matchCategory = !category || product.category?._id === category;
-                const matchPrice = product.price >= minPrice && product.price <= maxPrice;
-                return matchSearch && matchCategory && matchPrice;
-            });
-            
-            renderProducts(filtered);
-        }
+            const filtered = getFilteredProducts();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
 
-        function prevPage() {
-            alert('Trang trước');
-        }
-
-        function nextPage() {
-            alert('Trang tiếp theo');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            renderProducts(filtered.slice(start, end));
+            renderPagination(filtered.length);
         }
 
         function logout() {
             if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-                // Remove all auth-related keys
-                localStorage.removeItem('marc_auth_token');
-                localStorage.removeItem('marc_refresh_token');
-                localStorage.removeItem('marc_user_info');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('userInfo');
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
-                
-                window.location.href = '../../pages/auth/login.html';
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
             }
         }
 
-        document.getElementById('productForm').addEventListener('submit', function(e) {
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+
+            if (!userInfo || !authToken) {
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                if (user.role !== 'admin') {
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error parsing user info:', error);
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert('Lưu sản phẩm thành công!');
-            closeProductModal();
-            loadProducts();
+            
+            const formData = new FormData();
+            const description = document.getElementById('productDescription').value.trim();
+            if (!description) {
+                alert('Vui lòng nhập mô tả sản phẩm');
+                return;
+            }
+
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('sku', document.getElementById('productSKU').value);
+            formData.append('description', description);
+            formData.append('category', document.getElementById('productCategory').value);
+            formData.append('price', document.getElementById('productPrice').value);
+            formData.append('discount', document.getElementById('productDiscount').value || 0);
+            formData.append('quantity', document.getElementById('productStock').value);
+            formData.append('size', document.getElementById('productSize').value);
+            
+            const imageFile = document.getElementById('productImage').files[0];
+            if (!editingProductId && !imageFile) {
+                alert('Vui lòng chọn hình ảnh');
+                return;
+            }
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            try {
+                const data = editingProductId
+                    ? await window.ProductAPI.updateProductForm(editingProductId, formData)
+                    : await window.ProductAPI.createProductForm(formData);
+
+                if (data.success) {
+                    alert(editingProductId ? 'Cập nhật sản phẩm thành công!' : 'Thêm sản phẩm thành công!');
+                    closeProductModal();
+                    await loadProducts();
+                } else {
+                    alert('Lỗi: ' + (data.message || 'Không thể lưu sản phẩm'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Lỗi khi lưu sản phẩm: ${getErrorMessage(error, 'Không thể lưu sản phẩm')}`);
+            }
         });
 
         document.getElementById('productModal').addEventListener('click', function(e) {
@@ -374,32 +515,27 @@
 
         // Auth check - prevent infinite redirect loop
         document.addEventListener('DOMContentLoaded', function() {
-            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
-            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
-            
-            if (!userInfo || !authToken) {
-                window.location.href = '../../pages/auth/login.html';
-                return;
-            }
-
-            try {
-                const user = JSON.parse(userInfo);
-                // Check if user is admin
-                if (user.role !== 'admin') {
-                    alert('Bạn không có quyền truy cập trang này!');
-                    window.location.href = '../../pages/customer/index.html';
-                    return;
-                }
-            } catch (error) {
-                console.error('Error parsing user info:', error);
-                window.location.href = '../../pages/auth/login.html';
+            if (!validateAdminAccess()) {
                 return;
             }
 
             // Load data
-            loadCategories();
-            loadProducts();
+            Promise.all([loadCategories(), loadProducts()]).catch((error) => {
+                console.error('Error loading admin product page:', error);
+                alert('Lỗi tải trang quản trị sản phẩm: ' + getErrorMessage(error, 'Không thể tải dữ liệu quản trị'));
+            });
         });
+
+        window.addEventListener('pageshow', function() {
+            validateAdminAccess(false);
+        });
+
+        window.openProductModal = openProductModal;
+        window.closeProductModal = closeProductModal;
+        window.editProduct = editProduct;
+        window.deleteProduct = deleteProduct;
+        window.filterProducts = filterProducts;
+        window.logout = logout;
     </script>
 </body>
 </html>

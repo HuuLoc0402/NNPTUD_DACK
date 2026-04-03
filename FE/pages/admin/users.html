@@ -225,6 +225,7 @@
                 <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
                 <li><a href="products.html"><i class="fas fa-box"></i> Sản Phẩm</a></li>
                 <li><a href="categories.html"><i class="fas fa-tags"></i> Danh Mục</a></li>
+                <li><a href="sizes.html"><i class="fas fa-ruler-combined"></i> Bảng Size</a></li>
                 <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> Đơn Hàng</a></li>
                 <li><a href="users.html" class="active"><i class="fas fa-users"></i> Người Dùng</a></li>
                 <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Thống Kê</a></li>
@@ -266,67 +267,8 @@
                             <th>Hành Động</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">NA</div>Nguyễn Văn A</div></td>
-                            <td>nguyenvana@email.com</td>
-                            <td>0901234567</td>
-                            <td>Khách Hàng</td>
-                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
-                            <td>15/02/2024</td>
-                            <td>
-                                <button class="action-btn edit">Sửa</button>
-                                <button class="action-btn delete">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">TB</div>Trần Thị B</div></td>
-                            <td>tranthib@email.com</td>
-                            <td>0912345678</td>
-                            <td>Khách Hàng</td>
-                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
-                            <td>20/01/2024</td>
-                            <td>
-                                <button class="action-btn edit">Sửa</button>
-                                <button class="action-btn delete">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">LC</div>Lê Văn C</div></td>
-                            <td>levanc@email.com</td>
-                            <td>0923456789</td>
-                            <td>Khách Hàng</td>
-                            <td><span class="status-badge badge-warning">Khóa</span></td>
-                            <td>10/03/2024</td>
-                            <td>
-                                <button class="action-btn edit">Sửa</button>
-                                <button class="action-btn delete">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">PT</div>Phạm Thị D</div></td>
-                            <td>phamthid@email.com</td>
-                            <td>0934567890</td>
-                            <td>Admin</td>
-                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
-                            <td>01/01/2024</td>
-                            <td>
-                                <button class="action-btn edit">Sửa</button>
-                                <button class="action-btn delete">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><div style="display: flex; align-items: center; gap: 10px;"><div class="user-avatar">HE</div>Hoàng Văn E</div></td>
-                            <td>hoangvane@email.com</td>
-                            <td>0945678901</td>
-                            <td>Khách Hàng</td>
-                            <td><span class="status-badge badge-success">Hoạt Động</span></td>
-                            <td>25/03/2024</td>
-                            <td>
-                                <button class="action-btn edit">Sửa</button>
-                                <button class="action-btn delete">Xóa</button>
-                            </td>
-                        </tr>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="7" style="text-align: center; padding: 20px;">Đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -334,12 +276,144 @@
     </div>
 
     <script>
-        function logout() {
-            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-                localStorage.removeItem('token');
-                window.location.href = '../auth/login.html';
+        const API_BASE_URL = 'http://localhost:5000/api/v1';
+
+        // Load users from API
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+                const response = await fetch(`${API_BASE_URL}/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.data)) {
+                    renderUsers(data.data);
+                } else {
+                    document.getElementById('usersTableBody').innerHTML = 
+                        '<tr><td colspan="7" style="text-align: center;">Không có người dùng</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTableBody').innerHTML = 
+                    '<tr><td colspan="7" style="text-align: center; color: red;">Lỗi tải dữ liệu</td></tr>';
             }
         }
+
+        // Render users to table
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Không có người dùng</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => {
+                const initials = (user.fullName || user.email || 'U')
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+                
+                const statusBadge = user.isActive ? 'badge-success' : 'badge-danger';
+                const statusText = user.isActive ? 'Hoạt Động' : 'Khóa';
+                
+                return `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="user-avatar">${initials}</div>
+                                ${user.fullName || 'N/A'}
+                            </div>
+                        </td>
+                        <td>${user.email || 'N/A'}</td>
+                        <td>${user.phone || 'N/A'}</td>
+                        <td>${user.role === 'admin' ? 'Admin' : 'Khách Hàng'}</td>
+                        <td><span class="status-badge ${statusBadge}">${statusText}</span></td>
+                        <td>${new Date(user.createdAt).toLocaleDateString('vi-VN')}</td>
+                        <td>
+                            <button class="action-btn edit" onclick="editUser('${user._id}')">Sửa</button>
+                            <button class="action-btn delete" onclick="deleteUser('${user._id}')">Xóa</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function editUser(id) {
+            alert(`Chỉnh sửa người dùng #${id}`);
+        }
+
+        function deleteUser(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+                alert(`Đã xóa người dùng #${id}`);
+            }
+        }
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+            }
+        }
+
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+
+            if (!userInfo || !authToken) {
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                if (user.role !== 'admin') {
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error parsing user info:', error);
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Auth check - prevent infinite redirect loop
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!validateAdminAccess()) {
+                return;
+            }
+
+            // Load users
+            loadUsers();
+        });
+
+        window.addEventListener('pageshow', function() {
+            validateAdminAccess(false);
+        });
     </script>
 </body>
 </html>

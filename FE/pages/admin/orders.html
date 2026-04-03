@@ -43,6 +43,7 @@
                 <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> DASHBOARD</a></li>
                 <li><a href="products.html"><i class="fas fa-box"></i> SẢN PHẨM</a></li>
                 <li><a href="categories.html"><i class="fas fa-tags"></i> DANH MỤC</a></li>
+                <li><a href="sizes.html"><i class="fas fa-ruler-combined"></i> BẢNG SIZE</a></li>
                 <li><a href="orders.html" class="active"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
                 <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
@@ -84,67 +85,8 @@
                             <th>Hành Động</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>#ORD001</td>
-                            <td>Nguyễn Văn A</td>
-                            <td>0901234567</td>
-                            <td>2.590.000₫</td>
-                            <td><span class="status-badge badge-success">Đã Giao</span></td>
-                            <td>01/04/2024</td>
-                            <td>
-                                <button class="btn btn-sm btn-info" onclick="viewOrder(1)">Xem</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteOrder(1)">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#ORD002</td>
-                            <td>Trần Thị B</td>
-                            <td>0912345678</td>
-                            <td>1.890.000₫</td>
-                            <td><span class="status-badge badge-warning">Chờ Giao</span></td>
-                            <td>01/04/2024</td>
-                            <td>
-                                <button class="action-btn view" onclick="viewOrder(2)">Xem</button>
-                                <button class="action-btn delete" onclick="deleteOrder(2)">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#ORD003</td>
-                            <td>Lê Văn C</td>
-                            <td>0923456789</td>
-                            <td>3.120.000₫</td>
-                            <td><span class="status-badge badge-info">Chờ Xác Nhận</span></td>
-                            <td>31/03/2024</td>
-                            <td>
-                                <button class="action-btn view" onclick="viewOrder(3)">Xem</button>
-                                <button class="action-btn delete" onclick="deleteOrder(3)">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#ORD004</td>
-                            <td>Phạm Thị D</td>
-                            <td>0934567890</td>
-                            <td>950.000₫</td>
-                            <td><span class="status-badge badge-danger">Đã Hủy</span></td>
-                            <td>30/03/2024</td>
-                            <td>
-                                <button class="action-btn view" onclick="viewOrder(4)">Xem</button>
-                                <button class="action-btn delete" onclick="deleteOrder(4)">Xóa</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#ORD005</td>
-                            <td>Hoàng Văn E</td>
-                            <td>0945678901</td>
-                            <td>2.150.000₫</td>
-                            <td><span class="status-badge badge-info">Chờ Xác Nhận</span></td>
-                            <td>29/03/2024</td>
-                            <td>
-                                <button class="action-btn view" onclick="viewOrder(5)">Xem</button>
-                                <button class="action-btn delete" onclick="deleteOrder(5)">Xóa</button>
-                            </td>
-                        </tr>
+                    <tbody id="ordersTableBody">
+                        <tr><td colspan="7" style="text-align: center; padding: 20px;">Đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
 
@@ -207,19 +149,8 @@
                                 <th>Tổng</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>Áo Blouse Lụa - Trắng (M)</td>
-                                <td>1</td>
-                                <td>1.290.000₫</td>
-                                <td>1.290.000₫</td>
-                            </tr>
-                            <tr>
-                                <td>Quần Jean Xanh - Size M</td>
-                                <td>1</td>
-                                <td>1.890.000₫</td>
-                                <td>1.890.000₫</td>
-                            </tr>
+                        <tbody id="orderItemsBody">
+                            <!-- Order items will be loaded here -->
                         </tbody>
                     </table>
                 </div>
@@ -248,9 +179,137 @@
     </div>
 
     <script>
-        function viewOrder(id) {
-            document.getElementById('orderModal').classList.add('active');
-            // Load order data
+        const API_BASE_URL = 'http://localhost:5000/api/v1';
+        let allOrders = [];
+
+        // Load orders from API (for admin - all orders)
+        async function loadOrders() {
+            try {
+                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+                const response = await fetch(`${API_BASE_URL}/orders/admin/all`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.data)) {
+                    allOrders = data.data;
+                    renderOrders(allOrders);
+                } else {
+                    document.getElementById('ordersTableBody').innerHTML = 
+                        '<tr><td colspan="7" style="text-align: center;">Không có đơn hàng</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                document.getElementById('ordersTableBody').innerHTML = 
+                    '<tr><td colspan="7" style="text-align: center; color: red;">Lỗi tải dữ liệu</td></tr>';
+            }
+        }
+
+        // Render orders to table
+        function renderOrders(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Không có đơn hàng</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = orders.map(order => {
+                const statusMap = {
+                    'pending': 'Chờ Xác Nhận',
+                    'processing': 'Đang Xử Lý',
+                    'shipped': 'Đã Gửi',
+                    'delivered': 'Đã Giao',
+                    'cancelled': 'Đã Hủy'
+                };
+                
+                const statusBadgeMap = {
+                    'pending': 'badge-info',
+                    'processing': 'badge-warning',
+                    'shipped': 'badge-warning',
+                    'delivered': 'badge-success',
+                    'cancelled': 'badge-danger'
+                };
+                
+                const statusText = statusMap[order.orderStatus] || order.orderStatus;
+                const badgeClass = statusBadgeMap[order.orderStatus] || 'badge-info';
+                
+                return `
+                    <tr>
+                        <td><strong>${order._id?.slice(-6).toUpperCase() || 'N/A'}</strong></td>
+                        <td>${order.user?.fullName || 'N/A'}</td>
+                        <td>${order.user?.phone || 'N/A'}</td>
+                        <td>${(order.totalAmount || 0).toLocaleString('vi-VN')}₫</td>
+                        <td><span class="status-badge ${badgeClass}">${statusText}</span></td>
+                        <td>${new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewOrder('${order._id}')">Xem</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteOrder('${order._id}')">Xóa</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // View order detail
+        async function viewOrder(id) {
+            try {
+                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+                const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const order = data.data;
+                    
+                    // Populate modal
+                    document.getElementById('orderId').textContent = order._id?.slice(-6).toUpperCase();
+                    document.getElementById('customerName').textContent = order.user?.fullName || '-';
+                    document.getElementById('customerEmail').textContent = order.user?.email || '-';
+                    document.getElementById('customerPhone').textContent = order.user?.phone || '-';
+                    
+                    const statusMap = {
+                        'pending': 'Chờ Xác Nhận',
+                        'processing': 'Đang Xử Lý',
+                        'shipped': 'Đã Gửi',
+                        'delivered': 'Đã Giao',
+                        'cancelled': 'Đã Hủy'
+                    };
+                    document.getElementById('orderStatus').textContent = statusMap[order.orderStatus] || order.orderStatus;
+                    document.getElementById('shippingAddress').textContent = order.shippingAddress || '-';
+                    document.getElementById('orderNote').textContent = order.notes || 'Không có ghi chú';
+                    
+                    // Order items
+                    const itemsHtml = (order.items || []).map(item => `
+                        <tr>
+                            <td>${item.productName || 'N/A'}</td>
+                            <td>${item.quantity}</td>
+                            <td>${(item.price || 0).toLocaleString('vi-VN')}₫</td>
+                            <td>${(item.totalPrice || 0).toLocaleString('vi-VN')}₫</td>
+                        </tr>
+                    `).join('');
+                    document.getElementById('orderItemsBody').innerHTML = itemsHtml;
+                    
+                    // Totals
+                    document.getElementById('subtotal').textContent = (order.subtotal || 0).toLocaleString('vi-VN') + '₫';
+                    document.getElementById('shipping').textContent = (order.shippingFee || 0).toLocaleString('vi-VN') + '₫';
+                    document.getElementById('totalAmount').textContent = (order.totalAmount || 0).toLocaleString('vi-VN') + '₫';
+                    
+                    document.getElementById('orderModal').classList.add('active');
+                } else {
+                    alert('Không thể tải chi tiết đơn hàng');
+                }
+            } catch (error) {
+                console.error('Error loading order:', error);
+                alert('Lỗi khi tải chi tiết đơn hàng');
+            }
         }
 
         function closeOrderModal() {
@@ -260,24 +319,93 @@
         function deleteOrder(id) {
             if (confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
                 alert(`Đã xóa đơn hàng #${id}`);
+                loadOrders();
             }
         }
 
         function filterOrders() {
-            console.log('Filtering orders...');
+            const search = document.getElementById('searchOrder').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            const filtered = allOrders.filter(order => {
+                const matchSearch = !search || order._id.includes(search) || 
+                                  (order.user?.fullName || '').toLowerCase().includes(search);
+                const matchStatus = !status || order.orderStatus === status;
+                const orderDate = new Date(order.createdAt);
+                const matchFromDate = !fromDate || orderDate >= new Date(fromDate);
+                const matchToDate = !toDate || orderDate <= new Date(toDate);
+                
+                return matchSearch && matchStatus && matchFromDate && matchToDate;
+            });
+            
+            renderOrders(filtered);
         }
 
         function logout() {
             if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-                localStorage.removeItem('token');
-                window.location.href = '../auth/login.html';
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
             }
+        }
+
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+
+            if (!userInfo || !authToken) {
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                if (user.role !== 'admin') {
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error parsing user info:', error);
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            return true;
         }
 
         document.getElementById('orderModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeOrderModal();
             }
+        });
+
+        // Auth check and load orders
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!validateAdminAccess()) {
+                return;
+            }
+
+            loadOrders();
+        });
+
+        window.addEventListener('pageshow', function() {
+            validateAdminAccess(false);
         });
     </script>
 </body>

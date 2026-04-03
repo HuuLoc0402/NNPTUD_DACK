@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Thời Trang - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <style>
+        :root {
+            --blog-accent: #b23a48;
+            --blog-dark: #1f2933;
+            --blog-muted: #6b7280;
+            --blog-surface: #fffdf9;
+            --blog-cream: #f7efe5;
+            --blog-border: rgba(31, 41, 51, 0.12);
+            --blog-shadow: 0 22px 60px rgba(31, 41, 51, 0.12);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(178, 58, 72, 0.08), transparent 30%),
+                linear-gradient(180deg, #fffaf6 0%, #fff 42%, #f7efe5 100%);
+            color: var(--blog-dark);
+        }
+
+        .page-shell {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 24px 72px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+            gap: 28px;
+            padding: 44px 0 28px;
+        }
+
+        .hero-card,
+        .spotlight-card,
+        .story-card,
+        .mini-card,
+        .newsletter {
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(14px);
+            box-shadow: var(--blog-shadow);
+        }
+
+        .hero-card {
+            position: relative;
+            min-height: 520px;
+            border-radius: 34px;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            background:
+                linear-gradient(180deg, rgba(31, 41, 51, 0.08) 0%, rgba(31, 41, 51, 0.72) 100%),
+                url('../../assets/images/banner3.jpg') center/cover no-repeat;
+        }
+
+        .hero-card::after {
+            content: '';
+            position: absolute;
+            inset: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 24px;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            padding: 38px;
+            color: #fff;
+        }
+
+        .eyebrow,
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .eyebrow {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            margin-bottom: 18px;
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(36px, 5vw, 64px);
+            line-height: 1.02;
+            max-width: 9ch;
+            margin-bottom: 18px;
+        }
+
+        .hero-copy {
+            max-width: 54ch;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 15px;
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-top: 22px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.86);
+        }
+
+        .spotlight-card {
+            border-radius: 30px;
+            padding: 28px;
+            align-self: stretch;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            background:
+                linear-gradient(180deg, rgba(247, 239, 229, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
+        }
+
+        .panel-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+        }
+
+        .spotlight-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .mini-card {
+            border-radius: 22px;
+            padding: 18px;
+            border: 1px solid var(--blog-border);
+            cursor: pointer;
+            transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+        }
+
+        .mini-card:hover,
+        .story-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 26px 46px rgba(31, 41, 51, 0.14);
+            border-color: rgba(178, 58, 72, 0.28);
+        }
+
+        .mini-card h3,
+        .story-card h3 {
+            font-size: 20px;
+            line-height: 1.3;
+            margin: 10px 0 8px;
+        }
+
+        .mini-card p,
+        .story-card p,
+        .newsletter p,
+        .toolbar p {
+            color: var(--blog-muted);
+            font-size: 14px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: center;
+            margin: 10px 0 28px;
+            padding: 18px 22px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 26px;
+            box-shadow: 0 18px 40px rgba(31, 41, 51, 0.08);
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            border: 1px solid var(--blog-border);
+            background: transparent;
+            color: var(--blog-dark);
+            padding: 10px 16px;
+            border-radius: 999px;
+            cursor: pointer;
+            font: inherit;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .filter-chip.active,
+        .filter-chip:hover {
+            background: var(--blog-accent);
+            color: #fff;
+            border-color: var(--blog-accent);
+        }
+
+        .story-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .story-card {
+            display: flex;
+            flex-direction: column;
+            border-radius: 28px;
+            overflow: hidden;
+            border: 1px solid rgba(31, 41, 51, 0.08);
+            transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+        }
+
+        .story-image {
+            height: 220px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .story-image::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.36) 100%);
+        }
+
+        .story-body {
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 250px;
+        }
+
+        .tag {
+            background: rgba(178, 58, 72, 0.1);
+            color: var(--blog-accent);
+            border: 1px solid rgba(178, 58, 72, 0.18);
+            width: fit-content;
+        }
+
+        .story-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--blog-muted);
+            margin-top: auto;
+            padding-top: 14px;
+            border-top: 1px solid rgba(31, 41, 51, 0.08);
+        }
+
+        .read-button {
+            border: none;
+            background: transparent;
+            color: var(--blog-accent);
+            padding: 0;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            width: fit-content;
+        }
+
+        .newsletter {
+            margin-top: 34px;
+            border-radius: 30px;
+            padding: 30px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 20px;
+            align-items: center;
+            background:
+                linear-gradient(135deg, rgba(31, 41, 51, 0.96) 0%, rgba(70, 49, 60, 0.92) 100%);
+            color: #fff;
+        }
+
+        .newsletter .panel-title,
+        .newsletter p {
+            color: #fff;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .newsletter-form input {
+            min-width: 260px;
+            padding: 14px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font: inherit;
+        }
+
+        .newsletter-form input::placeholder {
+            color: rgba(255, 255, 255, 0.76);
+        }
+
+        .newsletter-form button {
+            border: none;
+            border-radius: 999px;
+            padding: 14px 22px;
+            background: #fff;
+            color: var(--blog-dark);
+            cursor: pointer;
+            font: inherit;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            padding: 34px;
+            text-align: center;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px dashed rgba(31, 41, 51, 0.16);
+            color: var(--blog-muted);
+        }
+
+        @media (max-width: 1024px) {
+            .hero,
+            .newsletter {
+                grid-template-columns: 1fr;
+            }
+
+            .story-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .newsletter-form {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .page-shell {
+                padding: 0 16px 56px;
+            }
+
+            .hero-card {
+                min-height: 460px;
+            }
+
+            .hero-content {
+                padding: 26px;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .story-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .newsletter-form input,
+            .newsletter-form button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="page-shell">
+        <section class="hero">
+            <article class="hero-card">
+                <div class="hero-content">
+                    <span class="eyebrow"><i class="fas fa-feather-alt"></i> Fashion Journal</span>
+                    <h1 class="hero-title">Những câu chuyện làm nên một phong cách có chủ đích.</h1>
+                    <p class="hero-copy">Blog MARC tập trung vào cách mặc đẹp trong đời sống thật: đi làm, đi chơi, du lịch cuối tuần, phối đồ tối giản nhưng vẫn có điểm nhấn và cập nhật các xu hướng đáng thử thay vì chạy theo trào lưu ngắn hạn.</p>
+                    <div class="hero-meta">
+                        <span><i class="far fa-calendar"></i> Cập nhật mỗi tuần</span>
+                        <span><i class="far fa-bookmark"></i> 12 bài chọn lọc</span>
+                        <span><i class="far fa-clock"></i> Đọc nhanh trong 4 phút</span>
+                    </div>
+                </div>
+            </article>
+
+            <aside class="spotlight-card">
+                <div>
+                    <span class="tag">Mới nổi bật</span>
+                    <h2 class="panel-title">Gợi ý đọc hôm nay</h2>
+                </div>
+                <div class="spotlight-list" id="spotlightList"></div>
+            </aside>
+        </section>
+
+        <section class="toolbar">
+            <div>
+                <h2 class="panel-title">Bài viết mới</h2>
+                <p>Chọn chủ đề bạn muốn xem hoặc đọc tuần tự toàn bộ editorial mới nhất.</p>
+            </div>
+            <div class="toolbar-actions" id="filterChips"></div>
+        </section>
+
+        <section class="story-grid" id="storyGrid"></section>
+
+        <section class="newsletter">
+            <div>
+                <h2 class="panel-title">Nhận bản tin mặc đẹp mỗi thứ Sáu</h2>
+                <p>Chúng tôi sẽ gửi một email ngắn gồm lookbook, xu hướng nên thử và các mẹo phối đồ ứng dụng được ngay.</p>
+            </div>
+            <form class="newsletter-form" id="newsletterForm">
+                <input type="email" id="newsletterEmail" placeholder="Nhập email của bạn" required>
+                <button type="submit">Đăng ký</button>
+            </form>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script>
+        const blogPosts = [
+            {
+                id: 1,
+                category: 'Styling',
+                title: '5 công thức phối blazer nữ để đi làm mà không bị cứng',
+                excerpt: 'Blazer không chỉ dành cho outfit nghiêm túc. Chỉ cần đổi chất liệu, layer mỏng và thêm một món phụ kiện đúng nhịp, tổng thể sẽ mềm hơn rất nhiều.',
+                image: '../../assets/images/banner1.png',
+                author: 'MARC Studio',
+                date: '03/04/2026',
+                readTime: '4 phút'
+            },
+            {
+                id: 2,
+                category: 'Trend',
+                title: 'Bảng màu mùa hè 2026: đỏ gạch, kem bơ và xanh sương',
+                excerpt: 'Ba gam màu đang được ưa chuộng không vì lạ, mà vì dễ đi cùng làn da châu Á và rất hợp với tinh thần thời trang thanh lịch của nữ giới thành thị.',
+                image: '../../assets/images/banner2.png',
+                author: 'Linh Trần',
+                date: '31/03/2026',
+                readTime: '5 phút'
+            },
+            {
+                id: 3,
+                category: 'Lifestyle',
+                title: 'Xếp vali 3 ngày 2 đêm với 7 món đồ đủ cho mọi lịch trình',
+                excerpt: 'Một chiếc đầm mềm, áo sơ mi trắng, chân váy midi và blazer mỏng là đủ để biến hóa linh hoạt từ quán cà phê sáng đến bữa tối cuối tuần.',
+                image: '../../assets/images/banner3.jpg',
+                author: 'Hà My',
+                date: '28/03/2026',
+                readTime: '4 phút'
+            },
+            {
+                id: 4,
+                category: 'Styling',
+                title: 'Cách chọn váy dáng A theo chiều cao và tỉ lệ vai-hông',
+                excerpt: 'Không phải dáng A nào cũng giống nhau. Độ xòe, vị trí eo và chiều dài váy quyết định việc tổng thể có gọn và tôn dáng hay không.',
+                image: '../../assets/images/banner4.jpg',
+                author: 'MARC Studio',
+                date: '24/03/2026',
+                readTime: '6 phút'
+            },
+            {
+                id: 5,
+                category: 'Trend',
+                title: 'Denim nữ 2026: ưu tiên phom đứng, wash sạch và chi tiết tối giản',
+                excerpt: 'Sau giai đoạn bùng nổ denim nhiều chi tiết, mùa này quay lại với quần jeans phom gọn, xanh đậm và độ hoàn thiện tinh tế hơn.',
+                image: '../../assets/images/banner1.png',
+                author: 'Khánh Vân',
+                date: '20/03/2026',
+                readTime: '3 phút'
+            },
+            {
+                id: 6,
+                category: 'Lifestyle',
+                title: 'Một tuần mặc đẹp với tủ đồ 12 món cơ bản',
+                excerpt: 'Capsule wardrobe không phải cắt giảm cực đoan. Nó là cách chọn đúng các món có thể phối lặp lại mà vẫn giữ cảm giác mới mẻ.',
+                image: '../../assets/images/banner2.png',
+                author: 'MARC Journal',
+                date: '18/03/2026',
+                readTime: '5 phút'
+            }
+        ];
+
+        let activeCategory = 'Tất cả';
+
+        function renderFilterChips() {
+            const categories = ['Tất cả', ...new Set(blogPosts.map((post) => post.category))];
+            const chips = document.getElementById('filterChips');
+
+            chips.innerHTML = categories.map((category) => `
+                <button class="filter-chip ${category === activeCategory ? 'active' : ''}" data-category="${category}">
+                    ${category}
+                </button>
+            `).join('');
+
+            chips.querySelectorAll('.filter-chip').forEach((button) => {
+                button.addEventListener('click', () => {
+                    activeCategory = button.dataset.category;
+                    renderFilterChips();
+                    renderStories();
+                });
+            });
+        }
+
+        function renderSpotlight() {
+            const spotlight = document.getElementById('spotlightList');
+            spotlight.innerHTML = blogPosts.slice(0, 3).map((post) => `
+                <article class="mini-card" onclick="focusStory(${post.id})">
+                    <span class="tag">${post.category}</span>
+                    <h3>${post.title}</h3>
+                    <p>${post.excerpt}</p>
+                </article>
+            `).join('');
+        }
+
+        function renderStories() {
+            const grid = document.getElementById('storyGrid');
+            const stories = activeCategory === 'Tất cả'
+                ? blogPosts
+                : blogPosts.filter((post) => post.category === activeCategory);
+
+            if (stories.length === 0) {
+                grid.innerHTML = '<div class="empty-state">Chưa có bài viết cho chủ đề này.</div>';
+                return;
+            }
+
+            grid.innerHTML = stories.map((post) => `
+                <article class="story-card" id="story-${post.id}">
+                    <div class="story-image" style="background-image: url('${post.image}')"></div>
+                    <div class="story-body">
+                        <span class="tag">${post.category}</span>
+                        <h3>${post.title}</h3>
+                        <p>${post.excerpt}</p>
+                        <button class="read-button" type="button" onclick="openArticle(${post.id})">Đọc bài viết <i class="fas fa-arrow-right"></i></button>
+                        <div class="story-meta">
+                            <span>${post.author}</span>
+                            <span>${post.date} · ${post.readTime}</span>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function focusStory(postId) {
+            const element = document.getElementById(`story-${postId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function openArticle(postId) {
+            const post = blogPosts.find((item) => item.id === postId);
+            if (!post) {
+                return;
+            }
+
+            alert(`${post.title}\n\n${post.excerpt}\n\nĐây là phiên bản blog landing page. Nếu bạn muốn, tôi có thể viết tiếp trang chi tiết bài blog riêng cho từng bài.`);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCommonComponents();
+            renderFilterChips();
+            renderSpotlight();
+            renderStories();
+
+            document.getElementById('newsletterForm').addEventListener('submit', (event) => {
+                event.preventDefault();
+                const email = document.getElementById('newsletterEmail').value.trim();
+                if (!email) {
+                    return;
+                }
+
+                localStorage.setItem('marc_blog_newsletter_email', email);
+                alert('Đăng ký nhận bản tin thành công. Chúng tôi đã lưu email của bạn trên trình duyệt này.');
+                event.target.reset();
+            });
+        });
+    </script>
+</body>
+</html>

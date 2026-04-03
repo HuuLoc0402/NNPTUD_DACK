@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const PRODUCT_SIZE_ENUM = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL', '6XL', 'One Size'];
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -62,13 +64,17 @@ const productSchema = new mongoose.Schema(
         _id: false
       }
     ],
+    color: {
+      type: [String],
+      default: []
+    },
     // Product variants for different sizes with different prices
     variants: [
       {
         size: {
           type: String,
           required: true,
-          enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'One Size']
+          enum: PRODUCT_SIZE_ENUM
         },
         price: {
           type: Number,
@@ -89,28 +95,6 @@ const productSchema = new mongoose.Schema(
         _id: false
       }
     ],
-    color: [String],
-    material: String,
-    origin: String,
-    brand: String,
-    ratingAverage: {
-      type: Number,
-      default: 0,
-      min: [0, 'Rating cannot be less than 0'],
-      max: [5, 'Rating cannot be more than 5']
-    },
-    ratingCount: {
-      type: Number,
-      default: 0
-    },
-    commentCount: {
-      type: Number,
-      default: 0
-    },
-    views: {
-      type: Number,
-      default: 0
-    },
     isActive: {
       type: Boolean,
       default: true
@@ -118,9 +102,27 @@ const productSchema = new mongoose.Schema(
     isFeatured: {
       type: Boolean,
       default: false
+    },
+    ratingAverage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5
+    },
+    commentCount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    views: {
+      type: Number,
+      default: 0,
+      min: 0
     }
   },
-  { timestamps: true }
+  {
+    timestamps: true
+  }
 );
 
 // Calculate final price before saving

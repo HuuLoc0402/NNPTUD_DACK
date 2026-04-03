@@ -246,6 +246,7 @@
                 <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
                 <li><a href="products.html"><i class="fas fa-box"></i> Sản Phẩm</a></li>
                 <li><a href="categories.html"><i class="fas fa-tags"></i> Danh Mục</a></li>
+                <li><a href="sizes.html"><i class="fas fa-ruler-combined"></i> Bảng Size</a></li>
                 <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> Đơn Hàng</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> Người Dùng</a></li>
                 <li><a href="analytics.html" class="active"><i class="fas fa-chart-bar"></i> Thống Kê</a></li>
@@ -274,27 +275,8 @@
             </div>
 
             <!-- STATS SUMMARY -->
-            <div class="stats-summary">
-                <div class="stat-box">
-                    <h3>Doanh Thu Hôm Nay</h3>
-                    <div class="value">45.8M</div>
-                    <div class="change">↑ 12% so với hôm qua</div>
-                </div>
-                <div class="stat-box">
-                    <h3>Đơn Hàng Hôm Nay</h3>
-                    <div class="value">45</div>
-                    <div class="change">↑ 5% so với hôm qua</div>
-                </div>
-                <div class="stat-box">
-                    <h3>Khách Mới</h3>
-                    <div class="value">12</div>
-                    <div class="change">↑ 8% so với hôm qua</div>
-                </div>
-                <div class="stat-box">
-                    <h3>Tỷ Lệ Chuyển Đổi</h3>
-                    <div class="value">3.2%</div>
-                    <div class="change">↓ 0.5% so với hôm qua</div>
-                </div>
+            <div class="stats-summary" id="statsSummary">
+                <!-- Stats will be loaded here -->
             </div>
 
             <!-- CHARTS -->
@@ -323,42 +305,8 @@
                             <th>Tỷ Lệ Tăng Trưởng</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Áo Blouse Lụa</td>
-                            <td>Áo</td>
-                            <td>156</td>
-                            <td>201.84M</td>
-                            <td><span style="color: var(--success); font-weight: 600;">↑ 24%</span></td>
-                        </tr>
-                        <tr>
-                            <td>Quần Jean Xanh</td>
-                            <td>Quần</td>
-                            <td>128</td>
-                            <td>241.92M</td>
-                            <td><span style="color: var(--success); font-weight: 600;">↑ 18%</span></td>
-                        </tr>
-                        <tr>
-                            <td>Đầm Công Sở</td>
-                            <td>Đầm</td>
-                            <td>89</td>
-                            <td>212.71M</td>
-                            <td><span style="color: var(--success); font-weight: 600;">↑ 15%</span></td>
-                        </tr>
-                        <tr>
-                            <td>Váy Xòe Hè</td>
-                            <td>Váy</td>
-                            <td>67</td>
-                            <td>106.53M</td>
-                            <td><span style="color: var(--danger); font-weight: 600;">↓ 3%</span></td>
-                        </tr>
-                        <tr>
-                            <td>Áo Tay Dài Ấm</td>
-                            <td>Áo</td>
-                            <td>45</td>
-                            <td>58.05M</td>
-                            <td><span style="color: var(--success); font-weight: 600;">↑ 12%</span></td>
-                        </tr>
+                    <tbody id="topProductsBody">
+                        <!-- Top products will be loaded here -->
                     </tbody>
                 </table>
             </div>
@@ -375,31 +323,8 @@
                             <th>Tỷ Lệ Doanh Thu</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Áo</td>
-                            <td>156</td>
-                            <td>259.89M</td>
-                            <td><strong>36.8%</strong></td>
-                        </tr>
-                        <tr>
-                            <td>Quần</td>
-                            <td>128</td>
-                            <td>241.92M</td>
-                            <td><strong>34.3%</strong></td>
-                        </tr>
-                        <tr>
-                            <td>Đầm</td>
-                            <td>89</td>
-                            <td>212.71M</td>
-                            <td><strong>30.1%</strong></td>
-                        </tr>
-                        <tr>
-                            <td>Váy (Khác)</td>
-                            <td>67</td>
-                            <td>106.53M</td>
-                            <td><strong>15.1%</strong></td>
-                        </tr>
+                    <tbody id="categoriesRevenueBody">
+                        <!-- Categories revenue will be loaded here -->
                     </tbody>
                 </table>
             </div>
@@ -407,70 +332,59 @@
     </div>
 
     <script>
-        // Revenue Chart
-        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-        new Chart(revenueCtx, {
-            type: 'line',
-            data: {
-                labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-                datasets: [{
-                    label: 'Doanh Thu (Triệu)',
-                    data: [250, 320, 280, 450, 380, 520, 450],
-                    borderColor: '#DC3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#DC3545'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: true }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
-
-        // Orders Chart
-        const ordersCtx = document.getElementById('ordersChart').getContext('2d');
-        new Chart(ordersCtx, {
-            type: 'bar',
-            data: {
-                labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-                datasets: [{
-                    label: 'Số Đơn Hàng',
-                    data: [32, 42, 28, 52, 38, 58, 45],
-                    backgroundColor: [
-                        '#DC3545', '#FF6B6B', '#FF8E8E', '#FFA5A5',
-                        '#FFB3B3', '#FFC1C1', '#FFCFCF'
-                    ],
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: true }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
-
         function logout() {
             if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-                localStorage.removeItem('token');
-                window.location.href = '../auth/login.html';
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
             }
         }
+
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+
+            if (!userInfo || !authToken) {
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                if (user.role !== 'admin') {
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error parsing user info:', error);
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            validateAdminAccess();
+        });
+
+        window.addEventListener('pageshow', function() {
+            validateAdminAccess(false);
+        });
     </script>
 </body>
 </html>

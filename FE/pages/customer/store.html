@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Cửa Hàng - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <style>
+        :root {
+            --store-accent: #a63a50;
+            --store-dark: #22303d;
+            --store-muted: #6b7280;
+            --store-cream: #f7f1eb;
+            --store-surface: rgba(255, 255, 255, 0.88);
+            --store-border: rgba(34, 48, 61, 0.1);
+            --store-shadow: 0 28px 60px rgba(34, 48, 61, 0.14);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(166, 58, 80, 0.12), transparent 28%),
+                linear-gradient(180deg, #fff8f4 0%, #fff 34%, #f5efe8 100%);
+            color: var(--store-dark);
+        }
+
+        .page-shell {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 0 24px 72px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+            gap: 28px;
+            padding: 42px 0 28px;
+        }
+
+        .hero-copy,
+        .map-shell,
+        .store-list-shell,
+        .empty-map-note {
+            background: var(--store-surface);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--store-shadow);
+        }
+
+        .hero-copy {
+            border-radius: 34px;
+            padding: 34px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 520px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(247, 241, 235, 0.95) 100%),
+                url('../../assets/images/banner2.png') center/cover no-repeat;
+            background-blend-mode: screen;
+        }
+
+        .eyebrow,
+        .city-chip,
+        .flagship {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .eyebrow,
+        .flagship {
+            background: rgba(166, 58, 80, 0.12);
+            color: var(--store-accent);
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        h1 {
+            font-size: clamp(34px, 5vw, 62px);
+            line-height: 1.04;
+            max-width: 11ch;
+            margin: 16px 0;
+        }
+
+        .hero-copy p,
+        .map-note,
+        .store-card p,
+        .store-meta,
+        .empty-map-note p {
+            color: var(--store-muted);
+            font-size: 14px;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 26px;
+        }
+
+        .hero-stat {
+            padding: 18px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(34, 48, 61, 0.08);
+        }
+
+        .hero-stat strong {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .map-shell {
+            border-radius: 34px;
+            padding: 22px;
+            display: grid;
+            gap: 16px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(243, 238, 231, 0.94) 100%);
+        }
+
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .map-canvas {
+            min-height: 520px;
+            border-radius: 28px;
+            overflow: hidden;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(244, 233, 223, 0.94));
+            border: 1px solid var(--store-border);
+        }
+
+        #storeMapFrame {
+            width: 100%;
+            height: 100%;
+            min-height: 520px;
+            border: 0;
+            display: block;
+        }
+
+        .empty-map-note {
+            border-radius: 24px;
+            padding: 22px;
+            border: 1px dashed rgba(166, 58, 80, 0.24);
+        }
+
+        .empty-map-note code {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(34, 48, 61, 0.06);
+            color: var(--store-dark);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .store-list-shell {
+            border-radius: 30px;
+            padding: 24px;
+        }
+
+        .filter-panel {
+            position: sticky;
+            top: 110px;
+        }
+
+        .filter-group {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--store-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .filter-panel input,
+        .filter-panel select {
+            width: 100%;
+            padding: 13px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(34, 48, 61, 0.14);
+            background: #fff;
+            font: inherit;
+        }
+
+        .store-list {
+            display: grid;
+            gap: 18px;
+            margin-top: 20px;
+        }
+
+        .store-card {
+            padding: 24px;
+            border-radius: 26px;
+            border: 1px solid rgba(34, 48, 61, 0.08);
+            background: rgba(255, 255, 255, 0.8);
+            transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+        }
+
+        .store-card:hover,
+        .store-card.is-active {
+            transform: translateY(-4px);
+            box-shadow: 0 24px 42px rgba(34, 48, 61, 0.12);
+            border-color: rgba(166, 58, 80, 0.24);
+        }
+
+        .store-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .store-title-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .store-title-row h3 {
+            font-size: 28px;
+        }
+
+        .city-chip {
+            background: rgba(34, 48, 61, 0.08);
+            color: var(--store-dark);
+        }
+
+        .store-meta {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .store-meta span {
+            display: inline-flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .store-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .store-actions button,
+        .store-actions a {
+            border: none;
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 999px;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .store-actions button {
+            background: var(--store-accent);
+            color: #fff;
+        }
+
+        .store-actions a {
+            background: rgba(34, 48, 61, 0.08);
+            color: var(--store-dark);
+        }
+
+        @media (max-width: 1100px) {
+            .hero,
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-panel {
+                position: static;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .page-shell {
+                padding: 0 16px 56px;
+            }
+
+            .hero-copy,
+            .map-shell,
+            .store-list-shell {
+                padding: 20px;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .map-header,
+            .store-top {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="page-shell">
+        <section class="hero">
+            <article class="hero-copy">
+                <div>
+                    <span class="eyebrow"><i class="fas fa-store"></i> Store Directory</span>
+                    <h1>Ghé đúng cửa hàng, đúng bộ sưu tập, đúng khung giờ thuận tiện.</h1>
+                    <p>Trang này liệt kê toàn bộ cửa hàng nổi bật của MARC và hiển thị vị trí trực tiếp trên Google Maps khi bạn đã cấu hình API key. Nếu chưa có key, bạn vẫn có thể dùng danh sách cửa hàng và liên kết mở Google Maps bên ngoài.</p>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <strong id="storeCount">0</strong>
+                        <span>Cửa hàng đang hiển thị</span>
+                    </div>
+                    <div class="hero-stat">
+                        <strong id="cityCount">0</strong>
+                        <span>Thành phố</span>
+                    </div>
+                    <div class="hero-stat">
+                        <strong>10:00 - 22:00</strong>
+                        <span>Khung giờ phổ biến</span>
+                    </div>
+                </div>
+            </article>
+
+            <section class="map-shell">
+                <div class="map-header">
+                    <div>
+                        <h2>Bản đồ cửa hàng</h2>
+                        <p class="map-note">Chọn một cửa hàng trong danh sách để focus vị trí trên bản đồ.</p>
+                    </div>
+                    <span class="flagship"><i class="fas fa-map-marked-alt"></i> Google Maps</span>
+                </div>
+                <div class="map-canvas" id="mapCanvas">
+                    <iframe
+                        id="storeMapFrame"
+                        title="Bản đồ cửa hàng MARC"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        src="about:blank">
+                    </iframe>
+                </div>
+            </section>
+        </section>
+
+        <section class="content-grid">
+            <aside class="store-list-shell filter-panel">
+                <h2>Bộ lọc nhanh</h2>
+                <div class="filter-group">
+                    <label class="filter-label" for="storeSearch">Tìm cửa hàng</label>
+                    <input id="storeSearch" type="text" placeholder="Nhập tên, quận hoặc trung tâm thương mại">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label" for="cityFilter">Thành phố</label>
+                    <select id="cityFilter">
+                        <option value="all">Tất cả thành phố</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label" for="flagshipFilter">Loại cửa hàng</label>
+                    <select id="flagshipFilter">
+                        <option value="all">Tất cả</option>
+                        <option value="flagship">Flagship</option>
+                        <option value="standard">Standard</option>
+                    </select>
+                </div>
+            </aside>
+
+            <section class="store-list-shell">
+                <h2>Danh sách cửa hàng</h2>
+                <div class="store-list" id="storeList"></div>
+            </section>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script>
+        const stores = [
+            {
+                id: 'store-hcm-flagship',
+                name: 'MARC Nguyễn Trãi Flagship',
+                city: 'TP. Hồ Chí Minh',
+                district: 'Quận 1',
+                address: '245 Nguyễn Trãi, Phường Nguyễn Cư Trinh, Quận 1, TP. Hồ Chí Minh',
+                phone: '028 7300 6868',
+                hours: '09:00 - 22:00',
+                flagship: true,
+                lat: 10.764463,
+                lng: 106.686219
+            },
+            {
+                id: 'store-hcm-crescent',
+                name: 'MARC Crescent Mall',
+                city: 'TP. Hồ Chí Minh',
+                district: 'Quận 7',
+                address: '101 Tôn Dật Tiên, Crescent Mall, Quận 7, TP. Hồ Chí Minh',
+                phone: '028 7300 6969',
+                hours: '10:00 - 22:00',
+                flagship: false,
+                lat: 10.728773,
+                lng: 106.718836
+            },
+            {
+                id: 'store-hn-flagship',
+                name: 'MARC Bà Triệu Flagship',
+                city: 'Hà Nội',
+                district: 'Hai Bà Trưng',
+                address: '191 Bà Triệu, Quận Hai Bà Trưng, Hà Nội',
+                phone: '024 7100 8282',
+                hours: '09:30 - 21:30',
+                flagship: true,
+                lat: 21.011879,
+                lng: 105.850505
+            },
+            {
+                id: 'store-hn-vincom',
+                name: 'MARC Vincom Royal City',
+                city: 'Hà Nội',
+                district: 'Thanh Xuân',
+                address: '72A Nguyễn Trãi, Vincom Royal City, Quận Thanh Xuân, Hà Nội',
+                phone: '024 7100 8383',
+                hours: '10:00 - 22:00',
+                flagship: false,
+                lat: 20.994069,
+                lng: 105.815351
+            },
+            {
+                id: 'store-dn-branch',
+                name: 'MARC Lê Duẩn',
+                city: 'Đà Nẵng',
+                district: 'Hải Châu',
+                address: '215 Lê Duẩn, Quận Hải Châu, Đà Nẵng',
+                phone: '0236 7300 9191',
+                hours: '09:00 - 21:30',
+                flagship: false,
+                lat: 16.068853,
+                lng: 108.214248
+            }
+        ];
+
+        let activeStoreId = stores[0].id;
+
+        function buildGoogleMapsLink(store) {
+            const query = encodeURIComponent(`${store.name}, ${store.address}`);
+            return `https://www.google.com/maps/search/?api=1&query=${query}`;
+        }
+
+        function buildEmbeddedMapLink(store) {
+            const query = encodeURIComponent(`${store.name}, ${store.address}`);
+            return `https://maps.google.com/maps?hl=vi&q=${query}&z=16&ie=UTF8&iwloc=B&output=embed`;
+        }
+
+        function updateHeroStats(visibleStores = stores) {
+            document.getElementById('storeCount').textContent = String(visibleStores.length);
+            document.getElementById('cityCount').textContent = String(new Set(visibleStores.map((store) => store.city)).size);
+        }
+
+        function populateCityFilter() {
+            const select = document.getElementById('cityFilter');
+            const cities = [...new Set(stores.map((store) => store.city))];
+            select.innerHTML += cities.map((city) => `<option value="${city}">${city}</option>`).join('');
+        }
+
+        function getFilteredStores() {
+            const searchValue = document.getElementById('storeSearch').value.trim().toLowerCase();
+            const cityValue = document.getElementById('cityFilter').value;
+            const flagshipValue = document.getElementById('flagshipFilter').value;
+
+            return stores.filter((store) => {
+                const matchesSearch = !searchValue ||
+                    store.name.toLowerCase().includes(searchValue) ||
+                    store.address.toLowerCase().includes(searchValue) ||
+                    store.district.toLowerCase().includes(searchValue);
+
+                const matchesCity = cityValue === 'all' || store.city === cityValue;
+                const matchesFlagship = flagshipValue === 'all'
+                    || (flagshipValue === 'flagship' && store.flagship)
+                    || (flagshipValue === 'standard' && !store.flagship);
+
+                return matchesSearch && matchesCity && matchesFlagship;
+            });
+        }
+
+        function renderStoreList() {
+            const filteredStores = getFilteredStores();
+            const list = document.getElementById('storeList');
+
+            updateHeroStats(filteredStores);
+
+            if (filteredStores.length === 0) {
+                list.innerHTML = '<div class="empty-map-note"><strong>Không tìm thấy cửa hàng phù hợp.</strong><p>Hãy thử thay đổi từ khóa hoặc bộ lọc thành phố.</p></div>';
+                return;
+            }
+
+            if (!filteredStores.some((store) => store.id === activeStoreId)) {
+                activeStoreId = filteredStores[0].id;
+            }
+
+            const activeStore = filteredStores.find((store) => store.id === activeStoreId) || filteredStores[0];
+
+            list.innerHTML = filteredStores.map((store) => `
+                <article class="store-card ${store.id === activeStoreId ? 'is-active' : ''}" data-store-id="${store.id}">
+                    <div class="store-top">
+                        <div>
+                            <div class="store-title-row">
+                                <h3>${store.name}</h3>
+                                ${store.flagship ? '<span class="flagship">Flagship</span>' : ''}
+                                <span class="city-chip">${store.city}</span>
+                            </div>
+                            <p>${store.address}</p>
+                        </div>
+                    </div>
+                    <div class="store-meta">
+                        <span><i class="far fa-clock"></i> ${store.hours}</span>
+                        <span><i class="fas fa-phone-alt"></i> ${store.phone}</span>
+                        <span><i class="fas fa-map-pin"></i> ${store.district}</span>
+                    </div>
+                    <div class="store-actions">
+                        <button type="button" onclick="selectStore('${store.id}')">Xem trên bản đồ</button>
+                        <a href="${buildGoogleMapsLink(store)}" target="_blank" rel="noopener noreferrer">Mở Google Maps</a>
+                    </div>
+                </article>
+            `).join('');
+
+            updateMapFrame(activeStore);
+        }
+
+        function updateMapFrame(store) {
+            const frame = document.getElementById('storeMapFrame');
+            if (!frame || !store) {
+                return;
+            }
+
+            frame.src = buildEmbeddedMapLink(store);
+            frame.title = `Bản đồ cửa hàng ${store.name}`;
+        }
+
+        function selectStore(storeId) {
+            activeStoreId = storeId;
+            renderStoreList();
+            const store = stores.find((item) => item.id === storeId);
+            if (store) {
+                updateMapFrame(store);
+            }
+        }
+
+        window.selectStore = selectStore;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            loadCommonComponents();
+            populateCityFilter();
+            renderStoreList();
+
+            ['storeSearch', 'cityFilter', 'flagshipFilter'].forEach((elementId) => {
+                document.getElementById(elementId).addEventListener('input', renderStoreList);
+                document.getElementById(elementId).addEventListener('change', renderStoreList);
+            });
+        });
+    </script>
+</body>
+</html>

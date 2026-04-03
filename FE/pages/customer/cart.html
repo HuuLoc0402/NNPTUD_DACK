@@ -8,302 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../../css/common.css">
     <link rel="stylesheet" href="../../css/components.css">
-    <style>
-        :root {
-            --primary-color: #DC3545;
-            --text-dark: #2C3E50;
-            --text-light: #7F8C8D;
-            --bg-light: #F8F7F4;
-            --accent-gold: #D4AF37;
-            --white: #FFFFFF;
-            --border-color: #E8E8E8;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            color: var(--text-dark);
-            background-color: var(--bg-light);
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* Cart Page Styles */
-        .breadcrumb {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 40px;
-            font-size: 12px;
-            color: var(--text-light);
-        }
-
-        .cart-container {
-            max-width: 1400px;
-            margin: 40px auto;
-            padding: 0 40px;
-        }
-
-        .cart-container h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 32px;
-            margin-bottom: 30px;
-            color: var(--text-dark);
-        }
-
-        .cart-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 40px;
-        }
-
-        .cart-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .cart-table thead {
-            background: #f5f5f5;
-        }
-
-        .cart-table th {
-            padding: 16px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-dark);
-            border-bottom: 2px solid #ddd;
-        }
-
-        .cart-table td {
-            padding: 16px;
-            border-bottom: 1px solid #eee;
-            font-size: 13px;
-        }
-
-        .product-cell {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .product-image {
-            width: 80px;
-            height: 80px;
-            border-radius: 4px;
-            overflow: hidden;
-            background: #f5f5f5;
-            flex-shrink: 0;
-        }
-
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .product-details h3 {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 4px;
-        }
-
-        .product-details p {
-            font-size: 12px;
-            color: var(--text-light);
-            margin: 0;
-        }
-
-        .quantity-control {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .qty-btn {
-            width: 30px;
-            height: 30px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .qty-btn:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .qty-input {
-            width: 40px;
-            text-align: center;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 4px;
-            font-size: 12px;
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            cursor: pointer;
-            font-size: 16px;
-            padding: 0;
-            transition: transform 0.3s ease;
-        }
-
-        .delete-btn:hover {
-            transform: scale(1.2);
-        }
-
-        .empty-cart {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 8px;
-        }
-
-        .empty-cart i {
-            font-size: 60px;
-            color: #ddd;
-            margin-bottom: 20px;
-        }
-
-        .empty-cart h2 {
-            font-size: 20px;
-            color: var(--text-dark);
-            margin-bottom: 10px;
-        }
-
-        .empty-cart p {
-            color: var(--text-light);
-            margin-bottom: 20px;
-        }
-
-        .cart-summary {
-            background: white;
-            border-radius: 8px;
-            padding: 25px;
-            height: fit-content;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .cart-summary h3 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: var(--text-dark);
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            font-size: 13px;
-            color: var(--text-dark);
-        }
-
-        .summary-row.total {
-            border-top: 2px solid #ddd;
-            padding-top: 12px;
-            margin-top: 20px;
-            font-weight: 600;
-            font-size: 15px;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #B82D3B;
-        }
-
-        .btn-outline {
-            background: white;
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-        }
-
-        .btn-outline:hover {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .benefits {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
-
-        .benefit-item {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 15px;
-            font-size: 12px;
-        }
-
-        .benefit-item i {
-            color: var(--primary-color);
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-
-        .benefit-item strong {
-            display: block;
-            color: var(--text-dark);
-            margin-bottom: 2px;
-        }
-
-        .benefit-item p {
-            color: var(--text-light);
-            margin: 0;
-        }
-
-        @media (max-width: 768px) {
-            .cart-wrapper {
-                grid-template-columns: 1fr;
-            }
-
-            .cart-table {
-                font-size: 11px;
-            }
-
-            .cart-table th,
-            .cart-table td {
-                padding: 12px;
-            }
-
-            .product-image {
-                width: 60px;
-                height: 60px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../../css/customer/cart-page.css">
 </head>
 <body>
     <!-- ==================== HEADER COMPONENT ==================== -->
@@ -409,11 +114,172 @@
     <script src="../../js/components/load-components.js"></script>
     <script src="../../js/shared.js"></script>
     <script>
-        // Initialize
+        let cartItems = [];
+        let selectedKeys = new Set();
+
+        function getCartStorageKey() {
+            return window.CONFIG?.STORAGE_KEYS?.CART || 'marc_cart';
+        }
+
+        function readCartItems() {
+            try {
+                const raw = localStorage.getItem(getCartStorageKey()) || localStorage.getItem('cart') || '[]';
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+                return Array.isArray(parsed.items) ? parsed.items : [];
+            } catch (error) {
+                console.error('Invalid cart data:', error);
+                return [];
+            }
+        }
+
+        function persistCartItems() {
+            localStorage.setItem(getCartStorageKey(), JSON.stringify(cartItems));
+            updateCartBadge();
+        }
+
+        function formatCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+        }
+
+        function getItemKey(item) {
+            return [item.productId, item.size || 'M', item.color || 'Mặc định'].join('__');
+        }
+
+        function resolveImageUrl(path) {
+            return window.CONFIG?.resolveMediaUrl(path, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function updateSummary() {
+            const activeItems = cartItems.filter((item) => selectedKeys.has(getItemKey(item)));
+            const subtotal = activeItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+            const discount = 0;
+            document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+            document.getElementById('discount').textContent = formatCurrency(discount);
+            document.getElementById('total').textContent = formatCurrency(subtotal - discount);
+            document.getElementById('shipping').textContent = subtotal > 0 ? 'Miễn phí' : '0 đ';
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cartItemsList');
+            const emptyCart = document.getElementById('emptyCart');
+            const cartTableContainer = document.getElementById('cartTableContainer');
+
+            cartItems = readCartItems();
+            if (!cartItems.length) {
+                tbody.innerHTML = '';
+                emptyCart.style.display = 'block';
+                cartTableContainer.style.display = 'none';
+                selectedKeys = new Set();
+                updateSummary();
+                return;
+            }
+
+            emptyCart.style.display = 'none';
+            cartTableContainer.style.display = 'block';
+            if (!selectedKeys.size) {
+                selectedKeys = new Set(cartItems.map(getItemKey));
+            }
+
+            tbody.innerHTML = cartItems.map((item) => {
+                const itemKey = getItemKey(item);
+                const quantity = Number(item.quantity) || 1;
+                const price = Number(item.price) || 0;
+                return `
+                    <tr>
+                        <td>
+                            <input class="item-checkbox" type="checkbox" data-key="${itemKey}" ${selectedKeys.has(itemKey) ? 'checked' : ''}>
+                        </td>
+                        <td>
+                            <div class="product-cell">
+                                <div class="product-image">
+                                    <img src="${resolveImageUrl(item.image)}" alt="${item.name}" onerror="this.src='../../assets/images/banner1.png'">
+                                </div>
+                                <div class="product-details">
+                                    <h3>${item.name || 'Sản phẩm'}</h3>
+                                    <p>Size: ${item.size || 'M'} | Màu: ${item.color || 'Mặc định'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${formatCurrency(price)}</td>
+                        <td>
+                            <div class="quantity-control">
+                                <button class="qty-btn" type="button" onclick="changeQuantity('${itemKey}', -1)">-</button>
+                                <input class="qty-input" type="text" value="${quantity}" readonly>
+                                <button class="qty-btn" type="button" onclick="changeQuantity('${itemKey}', 1)">+</button>
+                            </div>
+                        </td>
+                        <td>${formatCurrency(price * quantity)}</td>
+                        <td>
+                            <button class="delete-btn" type="button" onclick="removeCartItem('${itemKey}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('selectAll').checked = cartItems.length > 0 && cartItems.every((item) => selectedKeys.has(getItemKey(item)));
+            tbody.querySelectorAll('.item-checkbox').forEach((checkbox) => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectedKeys.add(this.dataset.key);
+                    } else {
+                        selectedKeys.delete(this.dataset.key);
+                    }
+                    document.getElementById('selectAll').checked = cartItems.every((item) => selectedKeys.has(getItemKey(item)));
+                    updateSummary();
+                });
+            });
+
+            updateSummary();
+        }
+
+        function changeQuantity(itemKey, delta) {
+            cartItems = readCartItems().map((item) => {
+                if (getItemKey(item) !== itemKey) {
+                    return item;
+                }
+
+                return {
+                    ...item,
+                    quantity: Math.max(1, (Number(item.quantity) || 1) + delta)
+                };
+            });
+
+            persistCartItems();
+            renderCart();
+        }
+
+        function removeCartItem(itemKey) {
+            cartItems = readCartItems().filter((item) => getItemKey(item) !== itemKey);
+            selectedKeys.delete(itemKey);
+            persistCartItems();
+            renderCart();
+        }
+
+        function setupCartEvents() {
+            document.getElementById('selectAll').addEventListener('change', function() {
+                if (this.checked) {
+                    selectedKeys = new Set(cartItems.map(getItemKey));
+                } else {
+                    selectedKeys.clear();
+                }
+                renderCart();
+            });
+        }
+
+        window.changeQuantity = changeQuantity;
+        window.removeCartItem = removeCartItem;
+
         document.addEventListener('DOMContentLoaded', function() {
             loadCommonComponents();
             updateCartBadge();
             updateHeaderAuth();
+            setupCartEvents();
+            renderCart();
         });
     </script>
 </body>

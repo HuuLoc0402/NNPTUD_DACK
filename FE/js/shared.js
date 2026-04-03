@@ -3,10 +3,7 @@ function getStorageKey(name, fallbackValue) {
 }
 
 function getStoredUser() {
-    const rawUser =
-        localStorage.getItem(getStorageKey('USER_INFO', 'marc_user_info')) ||
-        localStorage.getItem('userInfo');
-
+    const rawUser = localStorage.getItem(getStorageKey('USER_INFO', 'marc_user_info')) || localStorage.getItem('userInfo');
     if (!rawUser) {
         return null;
     }
@@ -20,10 +17,7 @@ function getStoredUser() {
 }
 
 function getStoredCart() {
-    const rawCart =
-        localStorage.getItem(getStorageKey('CART', 'marc_cart')) ||
-        localStorage.getItem('cart');
-
+    const rawCart = localStorage.getItem(getStorageKey('CART', 'marc_cart')) || localStorage.getItem('cart');
     if (!rawCart) {
         return [];
     }
@@ -33,10 +27,7 @@ function getStoredCart() {
         if (Array.isArray(parsed)) {
             return parsed;
         }
-        if (Array.isArray(parsed.items)) {
-            return parsed.items;
-        }
-        return [];
+        return Array.isArray(parsed.items) ? parsed.items : [];
     } catch (error) {
         console.error('Invalid cart data in storage:', error);
         return [];
@@ -45,7 +36,6 @@ function getStoredCart() {
 
 function updateCartBadge() {
     const badge = document.getElementById('cart-badge');
-
     if (!badge) {
         return;
     }
@@ -58,29 +48,41 @@ function updateCartBadge() {
 
 function updateHeaderAuth() {
     const authContainer = document.getElementById('auth-buttons');
-
     if (!authContainer) {
         return;
     }
 
     const user = getStoredUser();
-
     if (!user) {
         authContainer.innerHTML = '<a href="../auth/login.html" class="header-auth" style="color: var(--primary-color); font-weight: 600;">Đăng nhập</a>';
         return;
     }
 
-    const adminLink = user.role === 'admin'
-        ? '<a href="../../admin/dashboard.html" class="header-auth">Admin</a>'
-        : '';
-
-    authContainer.innerHTML = `${adminLink}<span class="header-user">${user.fullName || 'Tài khoản'}</span><button id="logoutBtn" class="header-logout-btn">Đăng xuất</button>`;
-    
-    // Re-attach logout event listener
+    authContainer.innerHTML = `<span class="header-user">${user.fullName || 'Tài khoản'}</span><button id="logoutBtn" class="header-logout-btn">Đăng xuất</button>`;
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
     }
+}
+
+function clearAuthStorage() {
+    if (window.apiClient?.logout) {
+        window.apiClient.logout();
+        return;
+    }
+
+    localStorage.removeItem(getStorageKey('AUTH_TOKEN', 'marc_auth_token'));
+    localStorage.removeItem(getStorageKey('REFRESH_TOKEN', 'marc_refresh_token'));
+    localStorage.removeItem(getStorageKey('USER_INFO', 'marc_user_info'));
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+}
+
+function redirectToLogin() {
+    window.location.replace('../auth/login.html');
 }
 
 async function logout(event) {
@@ -96,20 +98,17 @@ async function logout(event) {
         console.warn('Logout request failed:', error);
     }
 
-    if (window.apiClient?.logout) {
-        window.apiClient.logout();
-    }
-
-    localStorage.removeItem(getStorageKey('AUTH_TOKEN', 'marc_auth_token'));
-    localStorage.removeItem(getStorageKey('REFRESH_TOKEN', 'marc_refresh_token'));
-    localStorage.removeItem(getStorageKey('USER_INFO', 'marc_user_info'));
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userInfo');
-
-    window.location.href = '../auth/login.html';
+    clearAuthStorage();
+    updateHeaderAuth();
+    redirectToLogin();
 }
+
+window.addEventListener('pageshow', function() {
+    updateCartBadge();
+    updateHeaderAuth();
+});
 
 window.updateCartBadge = updateCartBadge;
 window.updateHeaderAuth = updateHeaderAuth;
+window.clearAuthStorage = clearAuthStorage;
 window.logout = logout;
