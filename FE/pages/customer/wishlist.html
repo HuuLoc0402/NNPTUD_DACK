@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mục Yêu Thích - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <link rel="stylesheet" href="../../css/customer/wishlist.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <div class="wishlist-breadcrumb">
+        <a href="index.html">Trang chủ</a> /
+        <span>Mục yêu thích</span>
+    </div>
+
+    <section class="wishlist-page">
+        <div class="wishlist-header">
+            <div>
+                <p class="wishlist-eyebrow">SAN PHAM BAN DANG QUAN TAM</p>
+                <h1>Mục Yêu Thích</h1>
+                <p id="wishlistSummary">Đang tải mục yêu thích...</p>
+            </div>
+            <div class="wishlist-header-actions">
+                <button type="button" class="btn btn-outline" id="clearWishlistBtn">Xóa tất cả</button>
+                <a href="product-list.html" class="btn btn-primary">Tiếp tục mua sắm</a>
+            </div>
+        </div>
+
+        <div class="wishlist-grid" id="wishlistGrid"></div>
+
+        <div class="wishlist-empty" id="wishlistEmpty" style="display: none;">
+            <div class="wishlist-empty-icon"><i class="far fa-heart"></i></div>
+            <h2>Danh sách yêu thích đang trống</h2>
+            <p>Nhấn vào biểu tượng trái tim ở bất kỳ sản phẩm nào để lưu lại và quay lại xem sau.</p>
+            <a href="product-list.html" class="btn btn-primary">Khám phá sản phẩm</a>
+        </div>
+    </section>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        function formatCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+        }
+
+        function getCartStorageKey() {
+            return window.CONFIG?.STORAGE_KEYS?.CART || 'marc_cart';
+        }
+
+        function addWishlistItemToCart(item) {
+            const storageKey = getCartStorageKey();
+            const cart = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const existingItem = cart.find((entry) => entry.productId === item.productId && entry.size === item.size && entry.color === item.color);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    productId: item.productId,
+                    slug: item.slug,
+                    name: item.name,
+                    price: Number(item.price || 0),
+                    image: item.image,
+                    quantity: 1,
+                    size: item.size || 'M',
+                    color: item.color || 'Mặc định'
+                });
+            }
+
+            localStorage.setItem(storageKey, JSON.stringify(cart));
+            updateCartBadge();
+        }
+
+        function renderWishlist() {
+            const wishlist = window.getStoredWishlist();
+            const grid = document.getElementById('wishlistGrid');
+            const empty = document.getElementById('wishlistEmpty');
+            const summary = document.getElementById('wishlistSummary');
+            const clearButton = document.getElementById('clearWishlistBtn');
+
+            summary.textContent = wishlist.length
+                ? `Bạn đang lưu ${wishlist.length} sản phẩm để xem lại bất kỳ lúc nào.`
+                : 'Chưa có sản phẩm nào được lưu trong mục yêu thích.';
+            clearButton.disabled = wishlist.length === 0;
+
+            if (!wishlist.length) {
+                grid.innerHTML = '';
+                empty.style.display = 'grid';
+                return;
+            }
+
+            empty.style.display = 'none';
+            grid.innerHTML = wishlist.map((item) => `
+                <article class="wishlist-card">
+                    <a class="wishlist-card-image" href="product-detail.html?slug=${encodeURIComponent(item.slug || item.productId)}">
+                        <img src="${window.CONFIG.resolveMediaUrl(item.image, '../../assets/images/banner1.png')}" alt="${item.name}" onerror="this.src='../../assets/images/banner1.png'">
+                    </a>
+                    <div class="wishlist-card-content">
+                        <div class="wishlist-card-meta">
+                            <span>Lưu ngày ${new Date(item.addedAt || Date.now()).toLocaleDateString('vi-VN')}</span>
+                        </div>
+                        <h3>${item.name || 'Sản phẩm'}</h3>
+                        <p class="wishlist-card-variant">Màu: ${item.color || 'Mặc định'} · Size: ${item.size || 'M'}</p>
+                        <div class="wishlist-card-price">
+                            <strong>${formatCurrency(item.price)}</strong>
+                            ${Number(item.originalPrice || 0) > Number(item.price || 0) ? `<span>${formatCurrency(item.originalPrice)}</span>` : ''}
+                        </div>
+                        <div class="wishlist-card-actions">
+                            <a href="product-detail.html?slug=${encodeURIComponent(item.slug || item.productId)}" class="btn btn-outline">Xem chi tiết</a>
+                            <button type="button" class="btn btn-primary" data-action="add" data-id="${item.productId}">Thêm vào giỏ</button>
+                            <button type="button" class="btn btn-remove" data-action="remove" data-id="${item.productId}">Bỏ thích</button>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            loadCommonComponents();
+            updateCartBadge();
+            updateWishlistBadge();
+            updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
+            renderWishlist();
+
+            document.getElementById('clearWishlistBtn').addEventListener('click', function() {
+                if (!window.getStoredWishlist().length) {
+                    return;
+                }
+
+                if (confirm('Bạn có chắc muốn xóa toàn bộ mục yêu thích?')) {
+                    window.clearWishlist();
+                    renderWishlist();
+                }
+            });
+
+            document.getElementById('wishlistGrid').addEventListener('click', function(event) {
+                const actionButton = event.target.closest('[data-action]');
+                if (!actionButton) {
+                    return;
+                }
+
+                const productId = actionButton.dataset.id;
+                const wishlistItem = window.getStoredWishlist().find((item) => String(item.productId) === String(productId));
+                if (!wishlistItem) {
+                    return;
+                }
+
+                if (actionButton.dataset.action === 'remove') {
+                    window.removeWishlistItem(productId);
+                    renderWishlist();
+                    return;
+                }
+
+                addWishlistItemToCart(wishlistItem);
+                actionButton.textContent = 'Đã thêm';
+                setTimeout(() => {
+                    actionButton.textContent = 'Thêm vào giỏ';
+                }, 1200);
+            });
+        });
+
+        window.addEventListener('pageshow', function() {
+            renderWishlist();
+        });
+    </script>
+</body>
+</html>

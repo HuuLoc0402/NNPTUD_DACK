@@ -21,58 +21,28 @@
             <div class="products-header-actions">
                 <label class="search-box" for="searchInput">
                     <i class="fas fa-search"></i>
-                    <input type="search" id="searchInput" placeholder="Tìm kiếm theo tên hoặc mô tả sản phẩm...">
+                    <input type="search" id="searchInput" placeholder="Tìm kiếm sản phẩm, mô tả hoặc màu sắc...">
                 </label>
-                <div class="sort-options">
-                    <select id="sortSelect">
-                        <option value="newest">Mới Nhất</option>
-                        <option value="popular">Phổ Biến</option>
-                        <option value="price-low">Giá Tăng Dần</option>
-                        <option value="price-high">Giá Giảm Dần</option>
-                        <option value="rating">Đánh Giá Cao</option>
-                    </select>
+                <div class="products-actions-side">
+                    <div class="sort-options">
+                        <select id="sortSelect">
+                            <option value="newest">Mới Nhất</option>
+                            <option value="popular">Phổ Biến</option>
+                            <option value="price-low">Giá Tăng Dần</option>
+                            <option value="price-high">Giá Giảm Dần</option>
+                            <option value="rating">Đánh Giá Cao</option>
+                        </select>
+                    </div>
+                    <button type="button" class="filter-toggle-btn" id="filterToggleBtn" aria-expanded="false" aria-controls="filtersPanel">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Bộ lọc</span>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="products-content">
-            <!-- Filters Sidebar -->
-            <aside class="filters-sidebar">
-                <div class="filter-group">
-                    <h3>Danh Mục</h3>
-                    <div class="filter-options" id="categoriesFilter">
-                        <!-- Categories will be loaded dynamically from API -->
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <h3>Giá</h3>
-                    <div class="price-range">
-                        <input type="range" id="priceMin" min="0" max="10000000" step="100000" value="0">
-                        <input type="range" id="priceMax" min="0" max="10000000" step="100000" value="10000000">
-                    </div>
-                    <div class="price-values">
-                        <span id="priceMinValue">0 đ</span> - <span id="priceMaxValue">10.000.000 đ</span>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <h3>Kích Cỡ</h3>
-                    <div class="filter-options">
-                        <label><input type="checkbox" name="size" value="XS"> XS</label>
-                        <label><input type="checkbox" name="size" value="S"> S</label>
-                        <label><input type="checkbox" name="size" value="M"> M</label>
-                        <label><input type="checkbox" name="size" value="L"> L</label>
-                        <label><input type="checkbox" name="size" value="XL"> XL</label>
-                        <label><input type="checkbox" name="size" value="XXL"> XXL</label>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary btn-block" id="clearFilters">Xóa Bộ Lọc</button>
-            </aside>
-
-            <!-- Products List -->
-            <main>
+        <div class="products-layout" id="productsLayout">
+            <main class="products-main">
                 <div class="products-toolbar">
                     <div class="results-count" id="resultsCount">Đang tải sản phẩm...</div>
                 </div>
@@ -90,6 +60,47 @@
                     <!-- Pagination will be generated dynamically -->
                 </div>
             </main>
+
+            <aside class="filters-sidebar" id="filtersPanel" aria-hidden="true">
+                <div class="filter-group">
+                    <h3>Danh Mục</h3>
+                    <div class="filter-options" id="categoriesFilter">
+                        <!-- Categories will be loaded dynamically from API -->
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Màu Sắc</h3>
+                    <div class="filter-options filter-colors" id="colorsFilter">
+                        <p style="color: #999;">Đang tải màu sắc...</p>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Giá</h3>
+                    <div class="price-range">
+                        <input type="range" id="priceMin" min="0" max="10000000" step="100000" value="0">
+                        <input type="range" id="priceMax" min="0" max="10000000" step="100000" value="10000000">
+                    </div>
+                    <div class="price-values">
+                        <span id="priceMinValue">0 đ</span> - <span id="priceMaxValue">10.000.000 đ</span>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Kích Cỡ</h3>
+                    <div class="filter-options filter-sizes">
+                        <label><input type="checkbox" name="size" value="XS"> XS</label>
+                        <label><input type="checkbox" name="size" value="S"> S</label>
+                        <label><input type="checkbox" name="size" value="M"> M</label>
+                        <label><input type="checkbox" name="size" value="L"> L</label>
+                        <label><input type="checkbox" name="size" value="XL"> XL</label>
+                        <label><input type="checkbox" name="size" value="XXL"> XXL</label>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" id="clearFilters">Xóa Bộ Lọc</button>
+            </aside>
         </div>
     </section>
 
@@ -103,6 +114,7 @@
     <script>
         let products = [];
         let categories = [];
+        let colorOptions = [];
         let currentPage = 1;
         const itemsPerPage = 12;
 
@@ -115,7 +127,7 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
-            loadCommonComponents();
+            await loadCommonComponents();
             updateCartBadge();
             updateWishlistBadge();
             updateHeaderAuth();
@@ -142,8 +154,45 @@
             return window.CONFIG?.resolveMediaUrl(path, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
         }
 
+        function getNormalizedColor(value) {
+            return normalizeText(value || 'Mặc định');
+        }
+
         function getProductImage(product) {
             return window.CONFIG?.resolveProductImage(product, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function getProductColors(product) {
+            return getProductColorDetails(product).map((item) => item.name);
+        }
+
+        function getProductColorDetails(product) {
+            const rawOptions = [
+                ...(Array.isArray(product?.colorOptions) ? product.colorOptions.map((item) => ({ name: item?.name, code: item?.code })) : []),
+                ...(Array.isArray(product?.colors) ? product.colors.map((item) => ({ name: item, code: '#D9D9D9' })) : []),
+                ...(Array.isArray(product?.variants) ? product.variants.map((item) => ({ name: item?.color, code: item?.colorCode || '#D9D9D9' })) : [])
+            ].filter((item) => item?.name);
+
+            const unique = [];
+            rawOptions.forEach((item) => {
+                const normalized = getNormalizedColor(item.name);
+                if (!unique.some((entry) => getNormalizedColor(entry.name) === normalized)) {
+                    unique.push({
+                        name: item.name,
+                        code: item.code || '#D9D9D9'
+                    });
+                }
+            });
+
+            return unique.length ? unique : [{ name: 'Mặc định', code: '#D9D9D9' }];
+        }
+
+        function getComparablePrice(product) {
+            return Number(product.minCurrentPrice || product.currentPrice || product.price || getDefaultVariant(product).finalPrice || 0);
+        }
+
+        function getComparablePopularity(product) {
+            return Number(product.views || product.soldCount || product.totalSold || 0);
         }
 
         function getDefaultVariant(product) {
@@ -246,11 +295,44 @@
                 const response = await fetch(apiBase + '/products?page=1&limit=100');
                 const data = await response.json();
                 products = data.data || [];
+                buildColorFilters();
                 renderProducts();
             } catch (error) {
                 console.error('Error loading products:', error);
                 document.getElementById('emptyMessage').style.display = 'block';
             }
+        }
+
+        function buildColorFilters() {
+            const container = document.getElementById('colorsFilter');
+            if (!container) {
+                return;
+            }
+
+            const discoveredColors = [];
+            products.forEach((product) => {
+                getProductColorDetails(product).forEach((color) => {
+                    const normalized = getNormalizedColor(color.name);
+                    if (!discoveredColors.some((item) => getNormalizedColor(item.name) === normalized)) {
+                        discoveredColors.push(color);
+                    }
+                });
+            });
+
+            colorOptions = discoveredColors;
+
+            if (!colorOptions.length) {
+                container.innerHTML = '<p style="color: #999;">Không có màu sắc</p>';
+                return;
+            }
+
+            container.innerHTML = colorOptions.map((color) => `
+                <label class="filter-color-chip">
+                    <input type="checkbox" name="color" value="${color.name}">
+                    <span class="filter-color-swatch" style="background:${color.code || '#D9D9D9'}"></span>
+                    <span>${color.name}</span>
+                </label>
+            `).join('');
         }
 
         function updateSearchUrl(value) {
@@ -265,9 +347,10 @@
 
         function renderProducts() {
             const grid = document.getElementById('productsList');
+            const sortBy = document.getElementById('sortSelect').value;
             
             // Apply filters
-            let filteredProducts = products;
+            let filteredProducts = [...products];
             
             // Category filter
             const selectedCategories = Array.from(document.querySelectorAll('input[name="category"]:checked')).map(cb => cb.value);
@@ -281,6 +364,7 @@
                 filteredProducts = filteredProducts.filter((product) =>
                     normalizeText(product.name).includes(searchParam)
                     || normalizeText(product.description).includes(searchParam)
+                    || getProductColors(product).some((color) => normalizeText(color).includes(searchParam))
                 );
             }
             
@@ -301,6 +385,26 @@
                 });
             }
 
+            const selectedColors = Array.from(document.querySelectorAll('input[name="color"]:checked')).map((checkbox) => checkbox.value);
+            if (selectedColors.length > 0) {
+                filteredProducts = filteredProducts.filter((product) => {
+                    const productColors = getProductColors(product);
+                    return selectedColors.some((color) => productColors.some((productColor) => getNormalizedColor(productColor) === getNormalizedColor(color)));
+                });
+            }
+
+            if (sortBy === 'price-low') {
+                filteredProducts.sort((a, b) => getComparablePrice(a) - getComparablePrice(b));
+            } else if (sortBy === 'price-high') {
+                filteredProducts.sort((a, b) => getComparablePrice(b) - getComparablePrice(a));
+            } else if (sortBy === 'newest') {
+                filteredProducts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            } else if (sortBy === 'rating') {
+                filteredProducts.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
+            } else if (sortBy === 'popular') {
+                filteredProducts.sort((a, b) => getComparablePopularity(b) - getComparablePopularity(a));
+            }
+
             // Pagination
             const start = (currentPage - 1) * itemsPerPage;
             const end = start + itemsPerPage;
@@ -318,18 +422,20 @@
             document.getElementById('emptyMessage').style.display = 'none';
 
             pageProducts.forEach(product => {
-                const sizes = product.sizes ? product.sizes.map(s => s.name || s).filter(Boolean) : [];
                 const defaultVariant = getDefaultVariant(product);
                 const currentPrice = Number(product.minCurrentPrice || defaultVariant.finalPrice || product.currentPrice || product.price || 0);
-                const maxCurrentPrice = Number(product.maxCurrentPrice || currentPrice);
-                const price = currentPrice
-                    ? (maxCurrentPrice > currentPrice
-                        ? `Từ ${currentPrice.toLocaleString('vi-VN')} đ`
-                        : `${currentPrice.toLocaleString('vi-VN')} đ`)
-                    : 'N/A';
+                const originalPrice = Number(product.minPrice || defaultVariant.price || product.price || currentPrice);
                 const imageUrl = getProductImage(product);
                 const productIdentifier = product.slug || product._id;
                 const categoryName = resolveCategoryName(product);
+                const showDiscount = originalPrice > currentPrice;
+                const discountValue = Number(product.discount || 0);
+                const discountText = discountValue > 0
+                    ? `-${Math.round(discountValue)}%`
+                    : showDiscount
+                        ? `-${Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}%`
+                        : '';
+                const colorDetails = getProductColorDetails(product);
 
                 const card = document.createElement('article');
                 card.className = 'product-card';
@@ -346,25 +452,22 @@
                 };
                 card.innerHTML = `
                     <div class="product-card-image">
+                        ${discountText ? `<span class="product-discount-badge">${discountText}</span>` : ''}
+                        <button class="product-wishlist-fab ${window.isProductWishlisted?.(product._id) ? 'active' : ''}" type="button" aria-label="Thêm vào yêu thích" data-product='${JSON.stringify(buildWishlistPayload(product)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation(); toggleWishlist(this)">
+                            <i class="${window.isProductWishlisted?.(product._id) ? 'fas' : 'far'} fa-heart"></i>
+                        </button>
                         <img src="${imageUrl}" alt="${product.name}" onerror="this.src='../../assets/images/banner1.png'">
                     </div>
                     <div class="product-card-body">
-                        <span class="product-category-badge">${categoryName}</span>
+                        <span class="product-card-category">${categoryName}</span>
                         <h3 class="product-card-title">${product.name}</h3>
-                        <div class="product-card-meta">
-                            ${sizes.length ? sizes.slice(0, 4).map((size) => `<span class="size-badge">${size}</span>`).join('') : '<span class="size-badge">M</span>'}
+                        <div class="product-card-price-wrap">
+                            <span class="product-card-price-current">${currentPrice.toLocaleString('vi-VN')}đ</span>
+                            ${showDiscount ? `<span class="product-card-price-original">${originalPrice.toLocaleString('vi-VN')}đ</span>` : ''}
                         </div>
-                        <div class="product-card-price">${price}</div>
-                        <div class="product-card-actions">
-                            <button class="btn btn-sm btn-view btn-flex" onclick="event.stopPropagation(); window.location.href='product-detail.html?slug=${encodeURIComponent(productIdentifier)}'">
-                                <i class="fas fa-eye"></i> Chi Tiết
-                            </button>
-                            <button class="btn btn-sm btn-cart btn-flex" onclick="event.stopPropagation(); addToCartById('${product._id}')">
-                                <i class="fas fa-shopping-cart"></i> Thêm
-                            </button>
-                            <button class="btn btn-sm btn-wishlist ${window.isProductWishlisted?.(product._id) ? 'active' : ''}" data-product='${JSON.stringify(buildWishlistPayload(product)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation(); toggleWishlist(this)">
-                                <i class="${window.isProductWishlisted?.(product._id) ? 'fas' : 'far'} fa-heart"></i>
-                            </button>
+                        <div class="product-card-swatches">
+                            ${colorDetails.slice(0, 4).map((color) => `<span class="product-color-dot" title="${color.name}" style="background:${color.code || '#D9D9D9'}"></span>`).join('')}
+                            ${colorDetails.length > 4 ? `<span class="product-color-more">+${colorDetails.length - 4}</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -403,8 +506,33 @@
         }
 
         function setupFilterHandlers() {
+            const filterToggleBtn = document.getElementById('filterToggleBtn');
+            const filtersPanel = document.getElementById('filtersPanel');
+            const productsLayout = document.getElementById('productsLayout');
+
+            filterToggleBtn.addEventListener('click', () => {
+                const isOpen = productsLayout.classList.contains('filters-open');
+                if (isOpen) {
+                    productsLayout.classList.remove('filters-open');
+                    filterToggleBtn.setAttribute('aria-expanded', 'false');
+                    filtersPanel.setAttribute('aria-hidden', 'true');
+                    return;
+                }
+
+                productsLayout.classList.add('filters-open');
+                filterToggleBtn.setAttribute('aria-expanded', 'true');
+                filtersPanel.setAttribute('aria-hidden', 'false');
+            });
+
             document.getElementById('categoriesFilter').addEventListener('change', (event) => {
                 if (event.target.matches('input[name="category"]')) {
+                    currentPage = 1;
+                    renderProducts();
+                }
+            });
+
+            document.getElementById('colorsFilter').addEventListener('change', (event) => {
+                if (event.target.matches('input[name="color"]')) {
                     currentPage = 1;
                     renderProducts();
                 }
@@ -455,19 +583,7 @@
             });
 
             // Sort
-            document.getElementById('sortSelect').addEventListener('change', (e) => {
-                const sortBy = e.target.value;
-                if (sortBy === 'price-low') {
-                    products.sort((a, b) => Number(a.currentPrice || a.price || 0) - Number(b.currentPrice || b.price || 0));
-                } else if (sortBy === 'price-high') {
-                    products.sort((a, b) => Number(b.currentPrice || b.price || 0) - Number(a.currentPrice || a.price || 0));
-                } else if (sortBy === 'newest') {
-                    products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                } else if (sortBy === 'rating') {
-                    products.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
-                } else if (sortBy === 'popular') {
-                    products.sort((a, b) => Number(b.views || 0) - Number(a.views || 0));
-                }
+            document.getElementById('sortSelect').addEventListener('change', () => {
                 currentPage = 1;
                 renderProducts();
             });

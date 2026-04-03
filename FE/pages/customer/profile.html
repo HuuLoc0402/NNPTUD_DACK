@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ Sơ Cá Nhân - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <link rel="stylesheet" href="../../css/customer/profile.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="profile-shell">
+        <div class="profile-breadcrumb">
+            <a href="index.html">Trang chủ</a> /
+            <span>Hồ sơ cá nhân</span>
+        </div>
+
+        <div class="profile-layout">
+            <aside class="profile-card">
+                <div class="profile-avatar" id="profileAvatar">M</div>
+                <h1 id="profileName">Đang tải...</h1>
+                <p id="profileEmail">Đang tải email...</p>
+                <p id="profileRole">Khách hàng</p>
+
+                <div class="profile-meta">
+                    <div class="profile-meta-item">
+                        <span>Số điện thoại</span>
+                        <strong id="profilePhone">-</strong>
+                    </div>
+                    <div class="profile-meta-item">
+                        <span>Địa chỉ liên hệ</span>
+                        <strong id="profileAddress">-</strong>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <a href="order-history.html">Xem lịch sử đơn hàng</a>
+                    <a href="wishlist.html">Mở mục yêu thích</a>
+                </div>
+            </aside>
+
+            <section class="profile-form-card">
+                <div class="profile-form-header">
+                    <h2>Cập Nhật Thông Tin</h2>
+                    <p>Khách hàng có thể chỉnh sửa thông tin cá nhân của mình. Email đăng nhập được giữ cố định.</p>
+                </div>
+
+                <form id="profileForm">
+                    <div class="profile-grid">
+                        <div class="form-group">
+                            <label for="fullName">Họ và tên</label>
+                            <input type="text" id="fullName" placeholder="Nhập họ và tên">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Số điện thoại</label>
+                            <input type="tel" id="phone" placeholder="09xxxxxxxx">
+                        </div>
+                        <div class="form-group">
+                            <label for="avatarFile">Ảnh đại diện</label>
+                            <input type="file" id="avatarFile" accept="image/png,image/jpeg,image/webp,image/gif">
+                        </div>
+                        <div class="form-group full">
+                            <div class="profile-upload-preview" id="profileUploadPreview">
+                                <div class="profile-upload-thumb" id="profileUploadThumb">M</div>
+                                <div>
+                                    <strong>Ảnh đại diện tài khoản</strong>
+                                    <p id="profileUploadHint">Tải ảnh JPG, PNG, WEBP hoặc GIF tối đa 5MB.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group full">
+                            <label for="street">Số nhà, đường</label>
+                            <input type="text" id="street" placeholder="Ví dụ: 123 Nguyễn Trãi">
+                        </div>
+                        <div class="form-group">
+                            <label for="province">Tỉnh/Thành phố</label>
+                            <select id="province">
+                                <option value="">Chọn tỉnh/thành phố</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="district">Quận/Huyện</label>
+                            <select id="district" disabled>
+                                <option value="">Chọn quận/huyện</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ward">Phường/Xã</label>
+                            <select id="ward" disabled>
+                                <option value="">Chọn phường/xã</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="profile-form-actions">
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                        <button type="button" class="btn btn-secondary" id="reloadProfileBtn">Tải lại</button>
+                        <span class="status-message" id="statusMessage"></span>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        const VIETNAM_ADDRESS_API = 'https://provinces.open-api.vn/api/?depth=3';
+        let selectedAvatarFile = null;
+        let vietnamAreas = [];
+
+        function ensureCustomerAccount() {
+            const user = window.getStoredUser?.();
+            if (!user) {
+                window.location.replace('../auth/login.html');
+                return false;
+            }
+
+            if (user.role === 'admin') {
+                window.location.replace('../admin/dashboard.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        function formatAddressText(address = {}) {
+            return [address.street, address.ward, address.district, address.province]
+                .filter(Boolean)
+                .join(', ') || 'Chưa cập nhật';
+        }
+
+        function setStatus(message = '', type = '') {
+            const status = document.getElementById('statusMessage');
+            status.textContent = message;
+            status.className = `status-message${type ? ` ${type}` : ''}`;
+        }
+
+        function getCurrentInitials(name) {
+            return String(name || 'M')
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((token) => token.charAt(0).toUpperCase())
+                .join('') || 'M';
+        }
+
+        function renderAvatarPreview(value, isImage = false) {
+            const thumb = document.getElementById('profileUploadThumb');
+            if (!thumb) {
+                return;
+            }
+
+            if (isImage) {
+                thumb.innerHTML = `<img src="${value}" alt="Avatar preview">`;
+                return;
+            }
+
+            thumb.textContent = value || 'M';
+        }
+
+        function populateSelect(selectId, options, placeholder) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = `<option value="">${placeholder}</option>` + options.map((item) => `<option value="${item.name}">${item.name}</option>`).join('');
+            select.disabled = options.length === 0;
+        }
+
+        function findProvinceByName(name) {
+            return vietnamAreas.find((province) => province.name === name);
+        }
+
+        function findDistrictByName(provinceName, districtName) {
+            const province = findProvinceByName(provinceName);
+            return province?.districts?.find((district) => district.name === districtName) || null;
+        }
+
+        function handleProvinceChange(preservedDistrict = '', preservedWard = '') {
+            const provinceName = document.getElementById('province').value;
+            const province = findProvinceByName(provinceName);
+            const districts = Array.isArray(province?.districts) ? province.districts : [];
+
+            populateSelect('district', districts, 'Chọn quận/huyện');
+            populateSelect('ward', [], 'Chọn phường/xã');
+
+            if (preservedDistrict && districts.some((district) => district.name === preservedDistrict)) {
+                document.getElementById('district').value = preservedDistrict;
+                handleDistrictChange(preservedWard);
+            }
+        }
+
+        function handleDistrictChange(preservedWard = '') {
+            const provinceName = document.getElementById('province').value;
+            const districtName = document.getElementById('district').value;
+            const district = findDistrictByName(provinceName, districtName);
+            const wards = Array.isArray(district?.wards) ? district.wards : [];
+
+            populateSelect('ward', wards, 'Chọn phường/xã');
+            if (preservedWard && wards.some((ward) => ward.name === preservedWard)) {
+                document.getElementById('ward').value = preservedWard;
+            }
+        }
+
+        async function loadVietnamAreas() {
+            try {
+                const response = await fetch(VIETNAM_ADDRESS_API);
+                if (!response.ok) {
+                    throw new Error('Không thể tải danh mục địa chỉ');
+                }
+
+                vietnamAreas = await response.json();
+                populateSelect('province', vietnamAreas, 'Chọn tỉnh/thành phố');
+            } catch (error) {
+                console.error('Address API error:', error);
+                setStatus('Không thể tải dữ liệu tỉnh/quận/phường lúc này.', 'error');
+            }
+        }
+
+        async function uploadAvatarIfNeeded() {
+            if (!selectedAvatarFile) {
+                return null;
+            }
+
+            const formData = new FormData();
+            formData.append('avatar', selectedAvatarFile);
+            const response = await window.AuthAPI.uploadProfileAvatar(formData);
+            selectedAvatarFile = null;
+            return response.user?.avatar || response.avatar || null;
+        }
+
+        function fillProfileForm(user) {
+            const address = user.address || {};
+            document.getElementById('fullName').value = user.fullName || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('street').value = address.street || '';
+            document.getElementById('avatarFile').value = '';
+
+            document.getElementById('profileName').textContent = user.fullName || 'Khách hàng';
+            document.getElementById('profileEmail').textContent = user.email || 'Không có email';
+            document.getElementById('profileRole').textContent = 'Khách hàng';
+            document.getElementById('profilePhone').textContent = user.phone || 'Chưa cập nhật';
+            document.getElementById('profileAddress').textContent = formatAddressText(address);
+
+            const avatarUrl = window.CONFIG.resolveMediaUrl(user.avatar, '');
+            if (avatarUrl) {
+                document.getElementById('profileAvatar').innerHTML = `<img src="${avatarUrl}" alt="${user.fullName || 'Avatar'}">`;
+                renderAvatarPreview(avatarUrl, true);
+            } else {
+                const initials = getCurrentInitials(user.fullName);
+                document.getElementById('profileAvatar').textContent = initials;
+                renderAvatarPreview(initials, false);
+            }
+
+            if (vietnamAreas.length) {
+                document.getElementById('province').value = address.province || '';
+                handleProvinceChange(address.district || '', address.ward || '');
+            }
+
+            document.getElementById('profileUploadHint').textContent = 'Tải ảnh JPG, PNG, WEBP hoặc GIF tối đa 5MB.';
+        }
+
+        async function loadProfile() {
+            if (!ensureCustomerAccount()) {
+                return;
+            }
+
+            try {
+                const response = await window.AuthAPI.getProfile();
+                const user = response.user;
+                window.storeUserInfo?.(user);
+                fillProfileForm(user);
+                updateHeaderAuth();
+                setStatus('');
+            } catch (error) {
+                setStatus(error.message || 'Không thể tải hồ sơ lúc này.', 'error');
+            }
+        }
+
+        async function handleProfileSubmit(event) {
+            event.preventDefault();
+
+            if (!ensureCustomerAccount()) {
+                return;
+            }
+
+            const payload = {
+                fullName: document.getElementById('fullName').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                address: {
+                    street: document.getElementById('street').value.trim(),
+                    ward: document.getElementById('ward').value,
+                    district: document.getElementById('district').value,
+                    province: document.getElementById('province').value,
+                    postalCode: ''
+                }
+            };
+
+            try {
+                setStatus('Đang lưu...', '');
+                const avatarPath = await uploadAvatarIfNeeded();
+                if (avatarPath) {
+                    payload.avatar = avatarPath;
+                }
+                const response = await window.AuthAPI.updateProfile(payload);
+                window.storeUserInfo?.(response.user);
+                fillProfileForm(response.user);
+                updateHeaderAuth();
+                setStatus('Cập nhật hồ sơ thành công.', 'success');
+            } catch (error) {
+                setStatus(error.message || 'Không thể cập nhật hồ sơ.', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCommonComponents();
+            updateCartBadge();
+            updateWishlistBadge();
+            updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
+
+            if (!ensureCustomerAccount()) {
+                return;
+            }
+
+            await loadVietnamAreas();
+
+            document.getElementById('province').addEventListener('change', () => handleProvinceChange());
+            document.getElementById('district').addEventListener('change', () => handleDistrictChange());
+            document.getElementById('avatarFile').addEventListener('change', function(event) {
+                const [file] = event.target.files || [];
+                selectedAvatarFile = file || null;
+
+                if (!file) {
+                    renderAvatarPreview(getCurrentInitials(document.getElementById('fullName').value), false);
+                    document.getElementById('profileUploadHint').textContent = 'Tải ảnh JPG, PNG, WEBP hoặc GIF tối đa 5MB.';
+                    return;
+                }
+
+                const objectUrl = URL.createObjectURL(file);
+                renderAvatarPreview(objectUrl, true);
+                document.getElementById('profileUploadHint').textContent = `Đã chọn: ${file.name}`;
+            });
+            document.getElementById('profileForm').addEventListener('submit', handleProfileSubmit);
+            document.getElementById('reloadProfileBtn').addEventListener('click', loadProfile);
+            loadProfile();
+        });
+    </script>
+</body>
+</html>

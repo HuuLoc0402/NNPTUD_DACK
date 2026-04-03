@@ -32,12 +32,13 @@ function getUserInitials(user) {
 }
 
 function getUserAvatarMarkup(user) {
+    const initials = getUserInitials(user);
     const avatarUrl = window.CONFIG?.resolveMediaUrl?.(user?.avatar, '') || '';
     if (avatarUrl) {
-        return `<img src="${avatarUrl}" alt="${user?.fullName || 'Avatar'}" class="header-avatar-image">`;
+        return `<img src="${avatarUrl}" alt="${user?.fullName || 'Avatar'}" class="header-avatar-image" onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"><span class="header-avatar-fallback" style="display:none;">${initials}</span>`;
     }
 
-    return `<span class="header-avatar-fallback">${getUserInitials(user)}</span>`;
+    return `<span class="header-avatar-fallback">${initials}</span>`;
 }
 
 function getStoredCart() {
@@ -269,17 +270,15 @@ function updateHeaderAuth() {
 
     const user = getStoredUser();
     if (!user) {
-        authContainer.innerHTML = '<a href="../auth/login.html" class="header-auth" style="color: var(--primary-color); font-weight: 600;">Đăng nhập</a>';
+        authContainer.innerHTML = '<a href="../auth/login.html" class="header-login-link">Đăng nhập</a>';
         return;
     }
 
     if (user.role === 'admin') {
         authContainer.innerHTML = `
             <div class="header-account">
-                <button type="button" class="header-account-trigger">
+                <button type="button" class="header-account-trigger" aria-label="Hồ sơ quản trị" title="Hồ sơ quản trị">
                     <span class="header-avatar">${getUserAvatarMarkup(user)}</span>
-                    <span class="header-user">${user.fullName || 'Admin'}</span>
-                    <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="header-account-menu">
                     <a href="../admin/dashboard.html" class="header-account-link">Trang quản trị</a>
@@ -290,17 +289,15 @@ function updateHeaderAuth() {
     } else {
         authContainer.innerHTML = `
             <div class="header-account">
-                <button type="button" class="header-account-trigger">
+                <button type="button" class="header-account-trigger" aria-label="Hồ sơ cá nhân" title="Hồ sơ cá nhân">
                     <span class="header-avatar">${getUserAvatarMarkup(user)}</span>
-                    <span class="header-user">${user.fullName || 'Tài khoản'}</span>
-                    <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="header-account-menu">
                     <a href="profile.html" class="header-account-link">Hồ sơ cá nhân</a>
                     <a href="order-history.html" class="header-account-link">Lịch sử đơn hàng</a>
                 </div>
             </div>
-            <button id="logoutBtn" class="header-logout-btn header-logout-inline" aria-label="Đăng xuất"><i class="fas fa-right-from-bracket"></i></button>
+            <button id="logoutBtn" class="header-logout-btn header-logout-inline">Đăng xuất</button>
         `;
     }
 

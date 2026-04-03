@@ -1,0 +1,210 @@
+:root {
+    --primary-color: #DC3545;
+    --text-dark: #2C3E50;
+    --text-light: #7F8C8D;
+    --bg-light: #F8F7F4;
+    --white: #FFFFFF;
+    --border-color: #E8E8E8;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    color: var(--text-dark);
+    background:
+        radial-gradient(circle at top right, rgba(220, 53, 69, 0.08), transparent 32%),
+        linear-gradient(180deg, #faf8f5 0%, #f5f1ec 100%);
+}
+
+.wishlist-breadcrumb {
+    max-width: 1320px;
+    margin: 24px auto 0;
+    padding: 0 24px;
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+.wishlist-breadcrumb a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.wishlist-page {
+    max-width: 1320px;
+    margin: 24px auto 80px;
+    padding: 0 24px;
+}
+
+.wishlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.wishlist-eyebrow {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--primary-color);
+}
+
+.wishlist-header h1 {
+    margin: 0 0 10px;
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+}
+
+.wishlist-header p {
+    margin: 0;
+    color: var(--text-light);
+}
+
+.wishlist-header-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.wishlist-grid {
+    display: grid;
+    gap: 22px;
+}
+
+.wishlist-card {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 22px;
+    padding: 20px;
+    border-radius: 22px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 18px 38px rgba(0,0,0,0.06);
+    backdrop-filter: blur(8px);
+}
+
+.wishlist-card-image {
+    display: block;
+    border-radius: 18px;
+    overflow: hidden;
+    aspect-ratio: 3 / 4;
+    background: #f3f3f3;
+}
+
+.wishlist-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wishlist-card-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.wishlist-card-meta {
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+.wishlist-card-content h3 {
+    margin: 0 0 10px;
+    font-size: 26px;
+}
+
+.wishlist-card-variant {
+    margin: 0 0 16px;
+    color: var(--text-light);
+    font-size: 13px;
+}
+
+.wishlist-card-price {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.wishlist-card-price strong {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px;
+    color: var(--primary-color);
+}
+
+.wishlist-card-price span {
+    color: var(--text-light);
+    text-decoration: line-through;
+}
+
+.wishlist-card-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.btn-remove {
+    background: transparent;
+    color: #B82030;
+    border: 1px solid rgba(184, 32, 48, 0.2);
+}
+
+.btn-remove:hover {
+    background: #B82030;
+    color: white;
+}
+
+.wishlist-empty {
+    min-height: 360px;
+    place-items: center;
+    text-align: center;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.92);
+    border: 1px dashed rgba(220, 53, 69, 0.3);
+    padding: 40px 24px;
+}
+
+.wishlist-empty-icon {
+    width: 86px;
+    height: 86px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(220, 53, 69, 0.08);
+    color: var(--primary-color);
+    font-size: 34px;
+}
+
+.wishlist-empty h2 {
+    margin: 0 0 10px;
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+}
+
+.wishlist-empty p {
+    max-width: 520px;
+    margin: 0 0 22px;
+    color: var(--text-light);
+}
+
+@media (max-width: 900px) {
+    .wishlist-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .wishlist-card {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .wishlist-card-actions,
+    .wishlist-header-actions {
+        flex-direction: column;
+    }
+}
