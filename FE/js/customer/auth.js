@@ -52,8 +52,17 @@ function persistAuth(data) {
 
 function redirectAfterAuth(data) {
     const payload = getAuthResponsePayload(data);
+    const redirectParams = new URLSearchParams(window.location.search);
+    const requestedRedirect = redirectParams.get('redirect') || sessionStorage.getItem('marc_post_auth_redirect');
+    sessionStorage.removeItem('marc_post_auth_redirect');
+
     if (payload.user?.role === 'admin') {
         window.location.replace('../admin/dashboard.html');
+        return;
+    }
+
+    if (requestedRedirect) {
+        window.location.replace(requestedRedirect);
         return;
     }
 

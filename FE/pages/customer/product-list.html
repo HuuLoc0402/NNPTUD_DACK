@@ -629,19 +629,10 @@
         }
 
         function addToCart(product) {
-            const storageKey = window.CONFIG?.STORAGE_KEYS?.CART || 'marc_cart';
-            const cart = JSON.parse(localStorage.getItem(storageKey) || '[]');
-            const existingItem = cart.find((item) => item.productId === product.productId && item.size === product.size && item.color === product.color);
-
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push({ ...product, quantity: 1 });
+            const result = window.addItemToCart({ ...product, quantity: 1 });
+            if (result?.ok) {
+                alert('Đã thêm vào giỏ hàng');
             }
-
-            localStorage.setItem(storageKey, JSON.stringify(cart));
-            updateCartBadge();
-            alert('Đã thêm vào giỏ hàng');
         }
 
         function toggleWishlist(button) {

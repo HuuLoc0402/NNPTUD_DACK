@@ -25,6 +25,22 @@ function storeUserInfo(user) {
     localStorage.setItem('userInfo', JSON.stringify(user));
 }
 
+const POST_AUTH_REDIRECT_KEY = 'marc_post_auth_redirect';
+
+function getCurrentPathWithQuery() {
+    return `${window.location.pathname || ''}${window.location.search || ''}${window.location.hash || ''}`;
+}
+
+function getCartOwnerScope(user = getStoredUser()) {
+    return String(user?._id || user?.id || user?.email || user?.phone || '').trim();
+}
+
+function getUserCartStorageKey(user = getStoredUser()) {
+    const baseKey = getStorageKey('CART', 'marc_cart');
+    const ownerScope = getCartOwnerScope(user);
+    return ownerScope ? `${baseKey}:${ownerScope}` : null;
+}
+
 function getUserInitials(user) {
     const name = String(user?.fullName || 'M').trim();
     const tokens = name.split(/\s+/).filter(Boolean);
@@ -42,7 +58,12 @@ function getUserAvatarMarkup(user) {
 }
 
 function getStoredCart() {
-    const rawCart = localStorage.getItem(getStorageKey('CART', 'marc_cart')) || localStorage.getItem('cart');
+    const storageKey = getUserCartStorageKey();
+    if (!storageKey) {
+        return [];
+    }
+
+    const rawCart = localStorage.getItem(storageKey);
     if (!rawCart) {
         return [];
     }
@@ -57,6 +78,27 @@ function getStoredCart() {
         console.error('Invalid cart data in storage:', error);
         return [];
     }
+}
+
+function persistStoredCart(items) {
+    const storageKey = getUserCartStorageKey();
+    if (!storageKey) {
+        return false;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(Array.isArray(items) ? items : []));
+    updateCartBadge();
+    return true;
+}
+
+function clearStoredCart() {
+    const storageKey = getUserCartStorageKey();
+    if (!storageKey) {
+        return;
+    }
+
+    localStorage.removeItem(storageKey);
+    updateCartBadge();
 }
 
 function getStoredWishlist() {
@@ -262,6 +304,62 @@ function updateCartBadge() {
     badge.style.display = total > 0 ? 'inline-flex' : 'none';
 }
 
+function requireCustomerAuth(options = {}) {
+    const { redirectPath = getCurrentPathWithQuery() } = options;
+    const user = getStoredUser();
+
+    if (!user) {
+        redirectToLogin(redirectPath);
+        return null;
+    }
+
+    if (user.role === 'admin') {
+        window.location.replace('../admin/dashboard.html');
+        return null;
+    }
+
+    return user;
+}
+
+function normalizeCartItem(product) {
+    return {
+        productId: product.productId || product._id,
+        slug: product.slug || product.productId || product._id,
+        name: product.name || 'Sản phẩm',
+        price: Number(product.price || 0),
+        image: product.image || '',
+        quantity: Math.max(1, Number(product.quantity || 1) || 1),
+        size: product.size || '',
+        color: product.color || ''
+    };
+}
+
+function addItemToCart(product, options = {}) {
+    const user = requireCustomerAuth({ redirectPath: options.redirectPath || getCurrentPathWithQuery() });
+    if (!user) {
+        return { ok: false, requiresAuth: true };
+    }
+
+    const normalizedItem = normalizeCartItem(product);
+    const cart = getStoredCart();
+    const existingItem = cart.find((item) => String(item.productId) === String(normalizedItem.productId)
+        && String(item.size || '') === String(normalizedItem.size || '')
+        && String(item.color || '') === String(normalizedItem.color || ''));
+
+    if (existingItem) {
+        existingItem.quantity += normalizedItem.quantity;
+        existingItem.price = normalizedItem.price || existingItem.price;
+        existingItem.image = normalizedItem.image || existingItem.image;
+        existingItem.slug = normalizedItem.slug || existingItem.slug;
+        existingItem.name = normalizedItem.name || existingItem.name;
+    } else {
+        cart.push(normalizedItem);
+    }
+
+    persistStoredCart(cart);
+    return { ok: true, items: cart, item: normalizedItem };
+}
+
 function updateHeaderAuth() {
     const authContainer = document.getElementById('auth-buttons');
     if (!authContainer) {
@@ -326,8 +424,17 @@ function clearAuthStorage() {
     hasHydratedWishlistFromServer = false;
 }
 
-function redirectToLogin() {
-    window.location.replace('../auth/login.html');
+function redirectToLogin(redirectPath = '') {
+    const normalizedPath = String(redirectPath || getCurrentPathWithQuery()).trim();
+    if (normalizedPath) {
+        sessionStorage.setItem(POST_AUTH_REDIRECT_KEY, normalizedPath);
+    }
+
+    const loginUrl = normalizedPath
+        ? `../auth/login.html?redirect=${encodeURIComponent(normalizedPath)}`
+        : '../auth/login.html';
+
+    window.location.replace(loginUrl);
 }
 
 async function logout(event) {
@@ -344,8 +451,9 @@ async function logout(event) {
     }
 
     clearAuthStorage();
+    sessionStorage.removeItem(POST_AUTH_REDIRECT_KEY);
     updateHeaderAuth();
-    redirectToLogin();
+    window.location.replace('../auth/login.html');
 }
 
 window.addEventListener('pageshow', function() {

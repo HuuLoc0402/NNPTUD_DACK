@@ -6,6 +6,10 @@ const categoryController = require('../controllers/categoryController');
 const productController = require('../controllers/productController');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const {
+  buildUploadedFileUrl,
+  deleteUploadFile
+} = require('../utils/uploadStorage');
 
 const router = express.Router();
 
@@ -83,7 +87,7 @@ router.post('/', authenticate, adminOnly, upload.single('image'), async (req, re
       name: req.body.name,
       slug: await buildUniqueSlug(req.body.name),
       description: req.body.description || '',
-      image: req.file ? `/uploads/${req.file.filename}` : null,
+      image: buildUploadedFileUrl(req.file),
       isActive: req.body.isActive === undefined ? true : req.body.isActive === 'true' || req.body.isActive === true,
       displayOrder: Number(req.body.displayOrder || 0),
       parent: req.body.parent || null
@@ -115,10 +119,13 @@ router.put('/:id', authenticate, adminOnly, upload.single('image'), async (req, 
     };
 
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
+      updateData.image = buildUploadedFileUrl(req.file);
     }
 
     const category = await categoryController.updateCategory(req.params.id, updateData);
+    if (req.file && existingCategory.image && existingCategory.image !== category.image) {
+      await deleteUploadFile(existingCategory.image);
+    }
     return res.status(200).json({ success: true, data: category });
   } catch (error) {
     next(error);
@@ -136,6 +143,8 @@ router.delete('/:id', authenticate, adminOnly, async (req, res, next) => {
     if (!category) {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
+
+    await deleteUploadFile(category.image);
 
     return res.status(200).json({ success: true, data: category });
   } catch (error) {

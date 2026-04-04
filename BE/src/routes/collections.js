@@ -6,6 +6,10 @@ const Product = require('../models/Product');
 const collectionController = require('../controllers/collectionController');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const {
+  buildUploadedFileUrl,
+  deleteUploadFile
+} = require('../utils/uploadStorage');
 
 const router = express.Router();
 
@@ -136,7 +140,7 @@ router.post('/', authenticate, adminOnly, upload.single('image'), async (req, re
       name: req.body.name,
       slug: await buildUniqueSlug(req.body.name),
       description: req.body.description || '',
-      image: req.file ? `/uploads/${req.file.filename}` : null,
+      image: buildUploadedFileUrl(req.file),
       products: productIds,
       isActive: req.body.isActive === undefined ? true : req.body.isActive === 'true' || req.body.isActive === true,
       isFeatured: req.body.isFeatured === undefined ? false : req.body.isFeatured === 'true' || req.body.isFeatured === true,
@@ -179,10 +183,13 @@ router.put('/:id', authenticate, adminOnly, upload.single('image'), async (req, 
     };
 
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
+      updateData.image = buildUploadedFileUrl(req.file);
     }
 
     const updatedCollection = await collectionController.updateCollection(req.params.id, updateData);
+    if (req.file && existingCollection.image && existingCollection.image !== updatedCollection.image) {
+      await deleteUploadFile(existingCollection.image);
+    }
     return res.status(200).json({
       success: true,
       data: collectionController.formatCollection(updatedCollection, { includeProducts: true, adminView: true })
@@ -198,6 +205,8 @@ router.delete('/:id', authenticate, adminOnly, async (req, res, next) => {
     if (!collection) {
       return res.status(404).json({ success: false, message: 'Collection not found' });
     }
+
+    await deleteUploadFile(collection.image);
 
     return res.status(200).json({ success: true, data: collection });
   } catch (error) {

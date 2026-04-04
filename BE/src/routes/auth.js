@@ -157,6 +157,7 @@ router.get('/profile', authenticate, async (req, res, next) => {
 
 router.post('/profile/avatar', authenticate, upload.single('avatar'), async (req, res, next) => {
 	try {
+		const { buildUploadedFileUrl, deleteUploadFile } = require('../utils/uploadStorage');
 		if (req.userRole === 'admin') {
 			return res.status(403).json({ success: false, message: 'Tài khoản admin không chỉnh sửa hồ sơ tại đây' });
 		}
@@ -165,11 +166,16 @@ router.post('/profile/avatar', authenticate, upload.single('avatar'), async (req
 			return res.status(400).json({ success: false, message: 'Vui lòng chọn ảnh đại diện hợp lệ' });
 		}
 
-		const avatarPath = `/uploads/${req.file.filename}`;
+		const previousAvatar = req.user?.avatar || null;
+		const avatarPath = buildUploadedFileUrl(req.file);
 		const user = await authController.updateUserProfile(req.userId, { avatar: avatarPath });
 
 		if (!user) {
 			return res.status(404).json({ success: false, message: 'User not found' });
+		}
+
+		if (previousAvatar && previousAvatar !== avatarPath) {
+			await deleteUploadFile(previousAvatar);
 		}
 
 		return res.status(200).json({

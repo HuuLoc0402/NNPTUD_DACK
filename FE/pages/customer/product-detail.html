@@ -783,33 +783,24 @@
                 return;
             }
 
-            const storageKey = window.CONFIG?.STORAGE_KEYS?.CART || 'marc_cart';
-            const cart = JSON.parse(localStorage.getItem(storageKey) || '[]');
             const quantity = Number(document.getElementById('quantityInput').value || 1);
-            const existingItem = cart.find((item) => item.productId === currentProduct._id && item.size === selectedSize && item.color === selectedColor);
             const variant = getMatchingVariant(currentProduct, selectedColor, selectedSize);
             const image = getImagesForColor(currentProduct, selectedColor)[0] || getProductImages(currentProduct)[0];
             const unitPrice = Number(variant?.finalPrice ?? currentProduct.currentPrice ?? currentProduct.price ?? 0);
+            const result = window.addItemToCart({
+                productId: currentProduct._id,
+                slug: currentProduct.slug,
+                name: currentProduct.name,
+                price: unitPrice,
+                image,
+                quantity,
+                size: selectedSize,
+                color: selectedColor
+            });
 
-            if (existingItem) {
-                existingItem.quantity += quantity;
-                existingItem.price = unitPrice;
-                existingItem.image = image;
-            } else {
-                cart.push({
-                    productId: currentProduct._id,
-                    slug: currentProduct.slug,
-                    name: currentProduct.name,
-                    price: unitPrice,
-                    image,
-                    quantity,
-                    size: selectedSize,
-                    color: selectedColor
-                });
+            if (!result?.ok) {
+                return;
             }
-
-            localStorage.setItem(storageKey, JSON.stringify(cart));
-            updateCartBadge();
 
             if (redirectToCart) {
                 window.location.href = 'cart.html';

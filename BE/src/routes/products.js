@@ -5,6 +5,11 @@ const productController = require('../controllers/productController');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const {
+  buildUploadedFileUrl,
+  collectProductImageUrls,
+  deleteUploadFiles
+} = require('../utils/uploadStorage');
+const {
   PRODUCT_SIZE_ENUM,
   buildVariantSkuSeed,
   dedupeColorOptions,
@@ -120,7 +125,7 @@ const normalizeGalleryEntries = ({ req, existingProduct }) => {
         const uploadIndex = Number(entry?.uploadIndex);
         const uploadFile = Number.isInteger(uploadIndex) ? galleryFiles[uploadIndex] : null;
         const url = uploadFile
-          ? `/uploads/${uploadFile.filename}`
+          ? buildUploadedFileUrl(uploadFile)
           : String(entry?.url || '').trim();
 
         if (!url) {
@@ -151,7 +156,7 @@ const normalizeGalleryEntries = ({ req, existingProduct }) => {
 
   if (galleryFiles.length > 0) {
     return galleryFiles.map((file, index) => ({
-      url: `/uploads/${file.filename}`,
+      url: buildUploadedFileUrl(file),
       color: null,
       alt: '',
       isPrimary: index === 0
@@ -160,7 +165,7 @@ const normalizeGalleryEntries = ({ req, existingProduct }) => {
 
   if (legacyImageFile) {
     return [{
-      url: `/uploads/${legacyImageFile.filename}`,
+      url: buildUploadedFileUrl(legacyImageFile),
       color: null,
       alt: '',
       isPrimary: true
@@ -443,6 +448,9 @@ router.put('/:id', authenticate, adminOnly, upload.fields([
 
     const payload = await buildProductPayload(req, existingProduct);
     const product = await productController.updateProduct(req.params.id, payload);
+    const previousUrls = collectProductImageUrls(existingProduct);
+    const currentUrls = collectProductImageUrls(product);
+    await deleteUploadFiles(previousUrls.filter((url) => !currentUrls.includes(url)));
 
     return res.status(200).json({
       success: true,
@@ -459,6 +467,8 @@ router.delete('/:id', authenticate, adminOnly, async (req, res, next) => {
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
+
+    await deleteUploadFiles(collectProductImageUrls(product));
 
     return res.status(200).json({ success: true, data: productController.formatProduct(product, false) });
   } catch (error) {

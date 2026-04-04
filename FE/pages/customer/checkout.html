@@ -734,29 +734,12 @@
         let districtOptions = [];
         let wardOptions = [];
 
-        function getCartStorageKey() {
-            return window.CONFIG?.STORAGE_KEYS?.CART || 'marc_cart';
-        }
-
         function readCartItems() {
-            try {
-                const raw = localStorage.getItem(getCartStorageKey()) || localStorage.getItem('cart') || '[]';
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                    return parsed;
-                }
-
-                return Array.isArray(parsed.items) ? parsed.items : [];
-            } catch (error) {
-                console.error('Invalid cart data:', error);
-                return [];
-            }
+            return window.getStoredCart();
         }
 
         function persistCartItems(items) {
-            localStorage.setItem(getCartStorageKey(), JSON.stringify(items));
-            localStorage.setItem('cart', JSON.stringify(items));
-            updateCartBadge();
+            window.persistStoredCart(items);
         }
 
         function normalizeText(value) {
@@ -1229,6 +1212,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
+            if (!window.requireCustomerAuth?.()) {
+                return;
+            }
+
             await loadCommonComponents();
             updateCartBadge();
             updateWishlistBadge();
