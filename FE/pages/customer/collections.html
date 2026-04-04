@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bộ Sưu Tập - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <link rel="stylesheet" href="../../css/customer/collections.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="collections-page">
+        <section class="collections-hero">
+            <div class="collections-hero-copy">
+                <p>Collection Edit</p>
+                <h1>Khám Phá Các Bộ Sưu Tập Đang Có</h1>
+                <span>Xem các nhóm sản phẩm được tuyển chọn theo concept, mùa và phong cách để truy cập nhanh vào đúng tinh thần bạn đang tìm.</span>
+            </div>
+            <div class="collections-hero-media"></div>
+        </section>
+
+        <section>
+            <div class="collections-grid" id="collectionsGrid">
+                <div class="collections-empty">Đang tải bộ sưu tập...</div>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        function getCollectionImage(path) {
+            return window.CONFIG?.resolveMediaUrl(path, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function openCollection(identifier) {
+            window.location.href = `collection-detail.html?slug=${encodeURIComponent(identifier)}`;
+        }
+
+        function renderCollections(collections) {
+            const grid = document.getElementById('collectionsGrid');
+
+            if (!collections.length) {
+                grid.innerHTML = '<div class="collections-empty">Hiện chưa có bộ sưu tập nào để hiển thị.</div>';
+                return;
+            }
+
+            grid.innerHTML = collections.map((collection) => `
+                <article class="collection-card" onclick="openCollection('${collection.slug || collection._id}')">
+                    <div class="collection-card-image-wrap">
+                        <img class="collection-card-image" src="${getCollectionImage(collection.image)}" alt="${collection.name}" onerror="this.src='../../assets/images/banner1.png'">
+                        <span class="collection-card-count">${collection.productCount || 0} sản phẩm</span>
+                    </div>
+                    <div class="collection-card-content">
+                        <h2 class="collection-card-title">${collection.name}</h2>
+                        <p class="collection-card-description">${collection.description || 'Mở collection để xem toàn bộ sản phẩm đang nằm trong nhóm này.'}</p>
+                        <span class="collection-card-link">Xem Collection</span>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCommonComponents();
+            updateCartBadge();
+            updateWishlistBadge();
+            updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
+
+            try {
+                const response = await window.CollectionAPI.getCollections({ limit: 50 });
+                renderCollections(Array.isArray(response?.data) ? response.data : []);
+            } catch (error) {
+                console.error('Error loading collections:', error);
+                document.getElementById('collectionsGrid').innerHTML = '<div class="collections-empty">Không thể tải danh sách collection lúc này.</div>';
+            }
+        });
+
+        window.openCollection = openCollection;
+    </script>
+</body>
+</html>

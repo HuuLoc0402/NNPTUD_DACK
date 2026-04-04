@@ -68,6 +68,19 @@
         </div>
     </section>
 
+    <section class="collections-preview">
+        <div class="collections-preview-header">
+            <div>
+                <p class="collections-preview-eyebrow">Curated Edit</p>
+                <h2 class="collections-preview-title">Bộ Sưu Tập Nổi Bật</h2>
+            </div>
+            <a class="collections-preview-link" href="collections.html">Xem tất cả</a>
+        </div>
+        <div class="collections-preview-grid" id="collectionsPreviewGrid">
+            <div class="collections-preview-status">Đang tải bộ sưu tập...</div>
+        </div>
+    </section>
+
     <!-- ==================== PROMOTION BANNER ==================== -->
     <section class="promotion">
         <div class="promo-content">
@@ -109,14 +122,14 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async function() {
-            loadCommonComponents();
+            await loadCommonComponents();
             updateCartBadge();
             updateWishlistBadge();
             updateHeaderAuth();
             await window.syncWishlistFromServer?.({ mergeLocal: true });
-            loadCategories();
-            loadHomepageProducts();
-            setupProductInteractions();
+            await loadCategories();
+            await loadFeaturedCollections();
+            await loadHomepageProducts();
         });
 
         // ==================== Category Loading ==================== 
@@ -137,6 +150,7 @@
 
         function renderCategories(categories) {
             const grid = document.getElementById('categoriesGrid');
+            window.homepageCategories = Array.isArray(categories) ? categories : [];
             grid.innerHTML = '';
 
             if (categories.length === 0) {
@@ -171,6 +185,44 @@
 
                 grid.appendChild(categoryItem);
             });
+        }
+
+        async function loadFeaturedCollections() {
+            const grid = document.getElementById('collectionsPreviewGrid');
+
+            try {
+                const response = await window.CollectionAPI.getCollections({ featured: true, limit: 3 });
+                const collections = Array.isArray(response?.data) ? response.data : [];
+                renderFeaturedCollections(collections);
+            } catch (error) {
+                console.error('Error loading featured collections:', error);
+                grid.innerHTML = '<div class="collections-preview-status">Không thể tải bộ sưu tập lúc này.</div>';
+            }
+        }
+
+        function renderFeaturedCollections(collections) {
+            const grid = document.getElementById('collectionsPreviewGrid');
+
+            if (!collections.length) {
+                grid.innerHTML = '<div class="collections-preview-status">Chưa có bộ sưu tập nổi bật.</div>';
+                return;
+            }
+
+            grid.innerHTML = collections.map((collection) => {
+                const imageUrl = window.CONFIG?.resolveMediaUrl(collection.image, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+                return `
+                    <article class="collection-preview-card" onclick="openCollectionDetail('${collection.slug || collection._id}')">
+                        <div class="collection-preview-image-wrap">
+                            <img class="collection-preview-image" src="${imageUrl}" alt="${collection.name}" onerror="this.src='../../assets/images/banner1.png'">
+                            <span class="collection-preview-badge">${collection.productCount || 0} sản phẩm</span>
+                        </div>
+                        <div class="collection-preview-content">
+                            <h3>${collection.name}</h3>
+                            <p>${collection.description || 'Khám phá bộ sưu tập được tuyển chọn từ các thiết kế nổi bật trong hệ thống.'}</p>
+                        </div>
+                    </article>
+                `;
+            }).join('');
         }
 
         async function loadHomepageProducts() {
@@ -225,6 +277,33 @@
             };
         }
 
+        function resolveCategoryName(product) {
+            if (product.category && typeof product.category === 'object' && product.category.name) {
+                return product.category.name;
+            }
+
+            const matchedCategory = Array.isArray(window.homepageCategories)
+                ? window.homepageCategories.find((category) => String(category._id) === String(product.category || product.categoryId))
+                : null;
+
+            return matchedCategory?.name || 'Không có danh mục';
+        }
+
+        function getProductColorDetails(product) {
+            const rawColors = Array.isArray(product?.colorOptions) && product.colorOptions.length
+                ? product.colorOptions.map((item) => ({ name: item?.name, code: item?.code || '#D9D9D9' }))
+                : Array.isArray(product?.variants)
+                    ? product.variants.map((item) => ({ name: item?.color, code: item?.colorCode || '#D9D9D9' }))
+                    : Array.isArray(product?.colors)
+                        ? product.colors.map((item) => ({ name: item, code: '#D9D9D9' }))
+                        : [];
+
+            return rawColors.filter((item, index, items) => {
+                const colorName = String(item?.name || '').trim();
+                return colorName && items.findIndex((entry) => String(entry?.name || '').trim().toLowerCase() === colorName.toLowerCase()) === index;
+            });
+        }
+
         function renderHomepageProducts(products) {
             const grid = document.getElementById('productsGrid');
 
@@ -237,28 +316,38 @@
                 const imageUrl = resolveProductImage(product);
                 const defaultVariant = getDefaultVariant(product);
                 const currentPrice = Number(product.minCurrentPrice || defaultVariant?.finalPrice || product.currentPrice || product.price || 0);
-                const maxCurrentPrice = Number(product.maxCurrentPrice || currentPrice);
-                const originalPrice = Number(product.minPrice || product.price || currentPrice);
+                const originalPrice = Number(product.minPrice || defaultVariant?.price || product.price || currentPrice);
                 const showDiscount = originalPrice > currentPrice;
-                const discountText = Number(product.discount || 0) > 0 ? `-${Math.round(Number(product.discount))}%` : 'Sale';
-                const priceLabel = maxCurrentPrice > currentPrice
-                    ? `Từ ${formatCurrency(currentPrice)}`
-                    : formatCurrency(currentPrice);
+                const discountText = Number(product.discount || 0) > 0
+                    ? `-${Math.round(Number(product.discount))}%`
+                    : showDiscount
+                        ? `-${Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}%`
+                        : '';
+                const categoryName = resolveCategoryName(product);
+                const colorDetails = getProductColorDetails(product);
 
                 return `
-                    <article class="product-card" onclick="openProductDetail('${product.slug || product._id}')">
-                        <div class="product-image">
-                            ${showDiscount ? `<span class="product-badge">${discountText}</span>` : ''}
+                    <article class="product-card" role="link" tabindex="0" onclick="openProductDetail('${product.slug || product._id}')" onkeydown="handleHomepageCardKeydown(event, '${product.slug || product._id}')">
+                        <div class="product-card-image">
+                            ${discountText ? `<span class="product-discount-badge">${discountText}</span>` : ''}
+                            <button class="product-wishlist-fab ${window.isProductWishlisted?.(product._id) ? 'active' : ''}" type="button" data-product='${JSON.stringify(buildWishlistPayload(product)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation(); handleHomepageToggleWishlist(this)" aria-label="Yêu thích">
+                                <i class="${window.isProductWishlisted?.(product._id) ? 'fas' : 'far'} fa-heart"></i>
+                            </button>
                             <img src="${imageUrl}" alt="${product.name}" onerror="this.src='../../assets/images/banner1.png'">
                         </div>
-                        <div class="product-info">
-                            <h3 class="product-name">${product.name}</h3>
-                            <div class="product-price">
-                                <span>${priceLabel}</span>
-                                ${showDiscount ? `<span class="original-price">${formatCurrency(originalPrice)}</span>` : ''}
+                        <div class="product-card-body">
+                            <span class="product-card-category">${categoryName}</span>
+                            <h3 class="product-card-title">${product.name}</h3>
+                            <div class="product-card-price-wrap">
+                                <span class="product-card-price-current">${formatCurrency(currentPrice)}</span>
+                                ${showDiscount ? `<span class="product-card-price-original">${formatCurrency(originalPrice)}</span>` : ''}
+                            </div>
+                            <div class="product-card-swatches">
+                                ${colorDetails.slice(0, 4).map((color) => `<span class="product-color-dot" title="${color.name}" style="background:${color.code || '#D9D9D9'}"></span>`).join('')}
+                                ${colorDetails.length > 4 ? `<span class="product-color-more">+${colorDetails.length - 4}</span>` : ''}
                             </div>
                             <div class="product-action">
-                                <button class="btn-add-cart" data-product='${JSON.stringify({
+                                <button class="btn-add-cart" type="button" data-product='${JSON.stringify({
                                     _id: product._id,
                                     slug: product.slug,
                                     name: product.name,
@@ -266,10 +355,7 @@
                                     image: imageUrl,
                                     size: defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : ''),
                                     color: defaultVariant?.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : '')
-                                }).replace(/'/g, '&apos;')}' onclick="event.stopPropagation()">Thêm Vào Giỏ</button>
-                                <button class="btn-wishlist ${window.isProductWishlisted?.(product._id) ? 'active' : ''}" type="button" data-product='${JSON.stringify(buildWishlistPayload(product)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation()" aria-label="Yêu thích">
-                                    <i class="${window.isProductWishlisted?.(product._id) ? 'fas' : 'far'} fa-heart"></i>
-                                </button>
+                                }).replace(/'/g, '&apos;')}' onclick="event.stopPropagation(); handleHomepageAddToCart(this)">Thêm vào giỏ</button>
                             </div>
                         </div>
                     </article>
@@ -277,66 +363,57 @@
             }).join('');
         }
 
-        function getCartStorageKey() {
-            return window.CONFIG?.STORAGE_KEYS?.CART || 'marc_cart';
-        }
-
         function addProductToCart(product) {
-            const storageKey = getCartStorageKey();
-            const cart = JSON.parse(localStorage.getItem(storageKey) || '[]');
-            const existingIndex = cart.findIndex((item) => item.productId === product._id && item.size === product.size && item.color === product.color);
-
-            if (existingIndex >= 0) {
-                cart[existingIndex].quantity += 1;
-            } else {
-                cart.push({
-                    productId: product._id,
-                    slug: product.slug,
-                    name: product.name,
-                    price: product.price,
-                    image: product.image,
-                    quantity: 1,
-                    size: product.size,
-                    color: product.color
-                });
-            }
-
-            localStorage.setItem(storageKey, JSON.stringify(cart));
-            updateCartBadge();
+            return window.addItemToCart({
+                productId: product._id,
+                slug: product.slug,
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                quantity: 1,
+                size: product.size,
+                color: product.color
+            });
         }
 
-        function setupProductInteractions() {
-            const grid = document.getElementById('productsGrid');
-            if (!grid) {
+        function handleHomepageAddToCart(button) {
+            const product = JSON.parse(button.dataset.product.replace(/&apos;/g, "'"));
+            const result = addProductToCart(product);
+            if (!result?.ok) {
                 return;
             }
 
-            grid.addEventListener('click', function(event) {
-                const addButton = event.target.closest('.btn-add-cart');
-                const wishlistButton = event.target.closest('.btn-wishlist');
+            const originalText = button.textContent;
+            button.textContent = 'Da them';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 1200);
+        }
 
-                if (addButton) {
-                    const product = JSON.parse(addButton.dataset.product.replace(/&apos;/g, "'"));
-                    addProductToCart(product);
-                    const originalText = addButton.textContent;
-                    addButton.textContent = '✓ Đã Thêm';
-                    setTimeout(() => {
-                        addButton.textContent = originalText;
-                    }, 1200);
-                    return;
-                }
+        function handleHomepageToggleWishlist(button) {
+            const product = JSON.parse(button.dataset.product.replace(/&apos;/g, "'"));
+            const result = window.toggleWishlistItem(product);
+            window.setWishlistButtonState(button, result.active);
+        }
 
-                if (wishlistButton) {
-                    const product = JSON.parse(wishlistButton.dataset.product.replace(/&apos;/g, "'"));
-                    const result = window.toggleWishlistItem(product);
-                    window.setWishlistButtonState(wishlistButton, result.active);
-                }
-            });
+        function handleHomepageCardKeydown(event, identifier) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openProductDetail(identifier);
+            }
         }
 
         function openProductDetail(identifier) {
             window.location.href = `product-detail.html?slug=${encodeURIComponent(identifier)}`;
         }
+
+        function openCollectionDetail(identifier) {
+            window.location.href = `collection-detail.html?slug=${encodeURIComponent(identifier)}`;
+        }
+
+        window.handleHomepageAddToCart = handleHomepageAddToCart;
+        window.handleHomepageToggleWishlist = handleHomepageToggleWishlist;
+        window.handleHomepageCardKeydown = handleHomepageCardKeydown;
 
         // ==================== Slider Controls ==================== 
         function showSlide(n) {

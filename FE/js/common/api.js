@@ -128,6 +128,14 @@ window.CategoryAPI = {
     deleteCategory: (id) => window.apiClient.delete(`/categories/${id}`)
 };
 
+window.CollectionAPI = {
+    getCollections: (params = {}) => window.apiClient.get(`/collections?${new URLSearchParams(params).toString()}`),
+    getCollection: (idOrSlug) => window.apiClient.get(`/collections/${idOrSlug}`),
+    createCollectionForm: (formData) => window.apiClient.postFormData('/collections', formData),
+    updateCollectionForm: (id, formData) => window.apiClient.putFormData(`/collections/${id}`, formData),
+    deleteCollection: (id) => window.apiClient.delete(`/collections/${id}`)
+};
+
 window.CartAPI = {
     getCart: () => window.apiClient.get('/carts'),
     addToCart: (data) => window.apiClient.post('/carts/add', data),

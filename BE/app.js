@@ -44,6 +44,7 @@ app.use((req, res, next) => {
 // API Routes
 app.use('/api/v1/auth', require('./src/routes/auth'));
 app.use('/api/v1/categories', require('./src/routes/categories'));
+app.use('/api/v1/collections', require('./src/routes/collections'));
 app.use('/api/v1/products', require('./src/routes/products'));
 app.use('/api/v1/users', require('./src/routes/users'));
 app.use('/api/v1/carts', require('./src/routes/carts'));

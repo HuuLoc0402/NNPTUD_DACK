@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Bộ Sưu Tập - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <link rel="stylesheet" href="../../css/customer/collection-detail.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="collection-detail-page">
+        <div class="collection-breadcrumb">
+            <a href="index.html">Trang chủ</a> /
+            <a href="collections.html">Bộ sưu tập</a> /
+            <span id="collectionBreadcrumbName">Đang tải...</span>
+        </div>
+
+        <section class="collection-hero-panel">
+            <div class="collection-hero-image" id="collectionHeroImage"></div>
+            <div class="collection-hero-content">
+                <p>Collection</p>
+                <h1 id="collectionTitle">Đang tải bộ sưu tập...</h1>
+                <div class="collection-description" id="collectionDescription">Vui lòng chờ trong giây lát để tải danh sách sản phẩm thuộc collection này.</div>
+                <div class="collection-summary-meta">
+                    <span id="collectionProductCount">0 sản phẩm</span>
+                    <span id="collectionUpdatedAt">Cập nhật gần đây</span>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="collection-products-header">
+                <h2>Sản Phẩm Trong Collection</h2>
+                <div class="collection-products-count" id="collectionProductsCountLabel">0 sản phẩm</div>
+            </div>
+            <div class="collection-products-grid" id="collectionProductsGrid">
+                <div class="collection-detail-empty">Đang tải sản phẩm...</div>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        function getUrlParameter(param) {
+            return new URLSearchParams(window.location.search).get(param);
+        }
+
+        function formatCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+        }
+
+        function getCollectionImage(path) {
+            return window.CONFIG?.resolveMediaUrl(path, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function getProductImage(product) {
+            return window.CONFIG?.resolveProductImage(product, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function getDefaultVariant(product) {
+            if (product?.defaultVariant) {
+                return product.defaultVariant;
+            }
+
+            if (Array.isArray(product?.variants) && product.variants.length) {
+                return product.variants[0];
+            }
+
+            return null;
+        }
+
+        function buildWishlistPayload(product) {
+            const defaultVariant = getDefaultVariant(product);
+            return {
+                productId: product._id,
+                slug: product.slug || product._id,
+                name: product.name,
+                image: getProductImage(product),
+                price: Number(defaultVariant?.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
+                originalPrice: Number(product.minPrice || product.price || product.currentPrice || 0),
+                size: defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : ''),
+                color: defaultVariant?.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : '')
+            };
+        }
+
+        function addToCart(product) {
+            return window.addItemToCart({ ...product, quantity: 1 });
+        }
+
+        function resolveCategoryName(product) {
+            if (product.category?.name) {
+                return product.category.name;
+            }
+
+            return 'Sản phẩm';
+        }
+
+        function renderCollection(collection) {
+            document.title = `${collection.name} - MARC Fashion`;
+            document.getElementById('collectionBreadcrumbName').textContent = collection.name;
+            document.getElementById('collectionTitle').textContent = collection.name;
+            document.getElementById('collectionDescription').textContent = collection.description || 'Collection này hiện đang tổng hợp các sản phẩm được tuyển chọn theo cùng concept.';
+            document.getElementById('collectionHeroImage').style.backgroundImage = `url('${getCollectionImage(collection.image)}')`;
+            document.getElementById('collectionProductCount').textContent = `${collection.products?.length || 0} sản phẩm`;
+            document.getElementById('collectionProductsCountLabel').textContent = `${collection.products?.length || 0} sản phẩm`;
+            document.getElementById('collectionUpdatedAt').textContent = `Cập nhật ${new Date(collection.updatedAt).toLocaleDateString('vi-VN')}`;
+
+            const grid = document.getElementById('collectionProductsGrid');
+            const products = Array.isArray(collection.products) ? collection.products : [];
+
+            if (!products.length) {
+                grid.innerHTML = '<div class="collection-detail-empty">Collection này hiện chưa có sản phẩm hiển thị.</div>';
+                return;
+            }
+
+            grid.innerHTML = products.map((product) => {
+                const defaultVariant = getDefaultVariant(product);
+                const currentPrice = Number(product.minCurrentPrice || defaultVariant?.finalPrice || product.currentPrice || product.price || 0);
+                const categoryName = resolveCategoryName(product);
+                return `
+                    <article class="collection-product-card" onclick="openProductDetail('${product.slug || product._id}')">
+                        <div class="collection-product-image-wrap">
+                            <button class="collection-product-wishlist ${window.isProductWishlisted?.(product._id) ? 'active' : ''}" type="button" data-product='${JSON.stringify(buildWishlistPayload(product)).replace(/'/g, '&apos;')}' onclick="event.stopPropagation(); toggleWishlist(this)">
+                                <i class="${window.isProductWishlisted?.(product._id) ? 'fas' : 'far'} fa-heart"></i>
+                            </button>
+                            <img src="${getProductImage(product)}" alt="${product.name}" onerror="this.src='../../assets/images/banner1.png'">
+                        </div>
+                        <div class="collection-product-body">
+                            <span class="collection-product-category">${categoryName}</span>
+                            <h3 class="collection-product-title">${product.name}</h3>
+                            <div class="collection-product-price">${formatCurrency(currentPrice)}</div>
+                            <div class="collection-product-footer">
+                                <button class="collection-product-link" type="button" onclick="event.stopPropagation(); openProductDetail('${product.slug || product._id}')">Chi tiết</button>
+                                <button class="collection-product-cart" type="button" data-product='${JSON.stringify({
+                                    productId: product._id,
+                                    slug: product.slug,
+                                    name: product.name,
+                                    price: currentPrice,
+                                    image: getProductImage(product),
+                                    size: defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : ''),
+                                    color: defaultVariant?.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : '')
+                                }).replace(/'/g, '&apos;')}' onclick="event.stopPropagation(); addProductToCart(this)">Thêm giỏ</button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function addProductToCart(button) {
+            const product = JSON.parse(button.dataset.product.replace(/&apos;/g, "'"));
+            const result = addToCart(product);
+            if (!result?.ok) {
+                return;
+            }
+            const originalText = button.textContent;
+            button.textContent = 'Đã thêm';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 1200);
+        }
+
+        function toggleWishlist(button) {
+            const product = JSON.parse(button.dataset.product.replace(/&apos;/g, "'"));
+            const result = window.toggleWishlistItem(product);
+            window.setWishlistButtonState(button, result.active);
+        }
+
+        function openProductDetail(identifier) {
+            window.location.href = `product-detail.html?slug=${encodeURIComponent(identifier)}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCommonComponents();
+            updateCartBadge();
+            updateWishlistBadge();
+            updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
+
+            const identifier = getUrlParameter('slug') || getUrlParameter('id');
+            if (!identifier) {
+                document.getElementById('collectionProductsGrid').innerHTML = '<div class="collection-detail-empty">Không tìm thấy collection cần xem.</div>';
+                return;
+            }
+
+            try {
+                const response = await window.CollectionAPI.getCollection(identifier);
+                renderCollection(response?.data || {});
+            } catch (error) {
+                console.error('Error loading collection detail:', error);
+                document.getElementById('collectionProductsGrid').innerHTML = '<div class="collection-detail-empty">Không thể tải collection lúc này.</div>';
+            }
+        });
+
+        window.toggleWishlist = toggleWishlist;
+        window.openProductDetail = openProductDetail;
+        window.addProductToCart = addProductToCart;
+    </script>
+</body>
+</html>

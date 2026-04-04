@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Bộ Sưu Tập - MARC Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/admin/unified.css">
+    <link rel="stylesheet" href="../../css/admin/collections.css">
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-logo">MARC</div>
+            <ul class="admin-sidebar-menu">
+                <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> DASHBOARD</a></li>
+                <li><a href="products.html"><i class="fas fa-box"></i> SẢN PHẨM</a></li>
+                <li><a href="categories.html"><i class="fas fa-tags"></i> DANH MỤC</a></li>
+                <li><a href="collections.html" class="active"><i class="fas fa-layer-group"></i> COLLECTION</a></li>
+                <li><a href="sizes.html"><i class="fas fa-ruler-combined"></i> BẢNG SIZE</a></li>
+                <li><a href="orders.html"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
+                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
+                <li><hr class="admin-sidebar-divider"></li>
+                <li><a href="../customer/index.html"><i class="fas fa-arrow-left"></i> VỀ TRANG CHỦ</a></li>
+                <li><a href="javascript:logout();"><i class="fas fa-sign-out-alt"></i> ĐĂNG XUẤT</a></li>
+            </ul>
+        </aside>
+
+        <div class="admin-main">
+            <div class="admin-header-section">
+                <h1>Quản Lý Bộ Sưu Tập</h1>
+                <button class="btn btn-primary" onclick="openCollectionModal()"><i class="fas fa-plus"></i> Thêm Collection</button>
+            </div>
+
+            <div class="card">
+                <div id="collectionsContainer">
+                    <div class="empty-collections">Đang tải bộ sưu tập...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="collectionModal" class="modal">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <h2 id="collectionModalTitle">Thêm Bộ Sưu Tập</h2>
+                <button class="close-btn" onclick="closeCollectionModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="collectionForm">
+                <div class="form-group">
+                    <label>Tên Bộ Sưu Tập *</label>
+                    <input type="text" id="collectionName" required placeholder="Ví dụ: Casual Chic">
+                </div>
+
+                <div class="form-group">
+                    <label>Mô Tả</label>
+                    <textarea id="collectionDescription" placeholder="Mô tả ngắn về bộ sưu tập"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ảnh Đại Diện</label>
+                        <input type="file" id="collectionImage" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Tùy Chọn</label>
+                        <div class="collection-options-inline">
+                            <label class="collection-option-item"><input type="checkbox" id="collectionActive" checked> Kích hoạt collection</label>
+                            <label class="collection-option-item"><input type="checkbox" id="collectionFeatured"> Hiển thị nổi bật ở trang chủ</label>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="product-builder-section">
+                    <div class="section-header-inline">
+                        <div>
+                            <h3>Sản Phẩm Thuộc Collection</h3>
+                            <p>Chọn các sản phẩm đã có để đưa vào collection này.</p>
+                        </div>
+                    </div>
+                    <div class="product-selector-toolbar">
+                        <input class="product-selector-search" id="collectionProductSearch" type="search" placeholder="Tìm sản phẩm theo tên hoặc SKU...">
+                        <span class="product-selector-count" id="collectionSelectedCount">0 sản phẩm đã chọn</span>
+                    </div>
+                    <div class="product-selector-list" id="collectionProductsList"></div>
+                </section>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCollectionModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu Collection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script>
+        let allCollections = [];
+        let allProducts = [];
+        let editingCollectionId = null;
+        let selectedCollectionProductIds = new Set();
+
+        function getErrorMessage(error, fallback = 'Có lỗi xảy ra') {
+            return error?.message || fallback;
+        }
+
+        function getImageUrl(path) {
+            return window.CONFIG?.resolveMediaUrl(path, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function formatCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')}₫`;
+        }
+
+        function getSelectedProductIds() {
+            return Array.from(selectedCollectionProductIds);
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('collectionSelectedCount').textContent = `${getSelectedProductIds().length} sản phẩm đã chọn`;
+        }
+
+        function renderCollections() {
+            const container = document.getElementById('collectionsContainer');
+
+            if (!allCollections.length) {
+                container.innerHTML = '<div class="empty-collections">Chưa có collection nào.</div>';
+                return;
+            }
+
+            container.innerHTML = allCollections.map((collection) => `
+                <article class="collection-overview-card">
+                    <img class="collection-overview-image" src="${getImageUrl(collection.image)}" alt="${collection.name}" onerror="this.src='../../assets/images/banner1.png'">
+                    <div>
+                        <h3 class="collection-overview-title">${collection.name}</h3>
+                        <div class="collection-overview-meta">
+                            <span class="collection-chip">${collection.productCount || 0} sản phẩm</span>
+                            <span class="collection-chip">${collection.isActive === false ? 'Ẩn' : 'Đang hiển thị'}</span>
+                            ${collection.isFeatured ? '<span class="collection-chip">Nổi bật</span>' : ''}
+                        </div>
+                        <p class="collection-overview-description">${collection.description || 'Chưa có mô tả cho collection này.'}</p>
+                    </div>
+                    <div class="collection-overview-actions">
+                        <button class="btn btn-outline" onclick="editCollection('${collection._id}')">Sửa</button>
+                        <button class="btn btn-secondary" onclick="deleteCollection('${collection._id}')">Xóa</button>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        function renderProductSelector(selectedIds = null) {
+            const searchValue = String(document.getElementById('collectionProductSearch').value || '').trim().toLowerCase();
+            const container = document.getElementById('collectionProductsList');
+            if (Array.isArray(selectedIds)) {
+                selectedCollectionProductIds = new Set(selectedIds.map(String));
+            }
+            const filteredProducts = allProducts.filter((product) => {
+                const haystack = [product.name, product.sku, product.slug].join(' ').toLowerCase();
+                return !searchValue || haystack.includes(searchValue);
+            });
+
+            if (!filteredProducts.length) {
+                container.innerHTML = '<div class="empty-collections">Không tìm thấy sản phẩm phù hợp.</div>';
+                updateSelectedCount();
+                return;
+            }
+
+            container.innerHTML = filteredProducts.map((product) => `
+                <label class="product-selector-item">
+                    <input type="checkbox" value="${product._id}" ${selectedCollectionProductIds.has(String(product._id)) ? 'checked' : ''}>
+                    <img src="${getImageUrl(product.image)}" alt="${product.name}" onerror="this.src='../../assets/images/banner1.png'">
+                    <div>
+                        <div class="product-selector-name">${product.name}</div>
+                        <div class="product-selector-meta">${product.sku || product.defaultVariant?.sku || 'Chưa có SKU'} · ${formatCurrency(product.minCurrentPrice || product.currentPrice || product.price || 0)}</div>
+                    </div>
+                </label>
+            `).join('');
+
+            container.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectedCollectionProductIds.add(this.value);
+                    } else {
+                        selectedCollectionProductIds.delete(this.value);
+                    }
+                    updateSelectedCount();
+                });
+            });
+
+            updateSelectedCount();
+        }
+
+        async function loadProducts() {
+            const response = await window.ProductAPI.getProducts({ page: 1, limit: 200 });
+            allProducts = Array.isArray(response?.data) ? response.data : [];
+            renderProductSelector();
+        }
+
+        async function loadCollections() {
+            const response = await window.CollectionAPI.getCollections();
+            allCollections = Array.isArray(response?.data) ? response.data : [];
+            renderCollections();
+        }
+
+        function resetCollectionForm() {
+            editingCollectionId = null;
+            selectedCollectionProductIds = new Set();
+            document.getElementById('collectionModalTitle').textContent = 'Thêm Bộ Sưu Tập';
+            document.getElementById('collectionForm').reset();
+            renderProductSelector();
+        }
+
+        function openCollectionModal() {
+            resetCollectionForm();
+            document.getElementById('collectionModal').classList.add('active');
+        }
+
+        function closeCollectionModal() {
+            document.getElementById('collectionModal').classList.remove('active');
+        }
+
+        function editCollection(id) {
+            const collection = allCollections.find((item) => String(item._id) === String(id));
+            if (!collection) {
+                alert('Không tìm thấy collection');
+                return;
+            }
+
+            editingCollectionId = id;
+            document.getElementById('collectionModalTitle').textContent = 'Chỉnh Sửa Bộ Sưu Tập';
+            document.getElementById('collectionName').value = collection.name || '';
+            document.getElementById('collectionDescription').value = collection.description || '';
+            document.getElementById('collectionActive').checked = collection.isActive !== false;
+            document.getElementById('collectionFeatured').checked = Boolean(collection.isFeatured);
+            renderProductSelector(collection.productIds || []);
+            document.getElementById('collectionModal').classList.add('active');
+        }
+
+        async function deleteCollection(id) {
+            if (!confirm('Bạn có chắc chắn muốn xóa collection này?')) {
+                return;
+            }
+
+            try {
+                await window.CollectionAPI.deleteCollection(id);
+                await loadCollections();
+                alert('Đã xóa collection thành công.');
+            } catch (error) {
+                alert('Lỗi xóa collection: ' + getErrorMessage(error, 'Không thể xóa collection'));
+            }
+        }
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+            }
+        }
+
+        function clearAuthState() {
+            localStorage.removeItem('marc_auth_token');
+            localStorage.removeItem('marc_refresh_token');
+            localStorage.removeItem('marc_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+
+        function validateAdminAccess(showUnauthorizedMessage = true) {
+            const userInfo = localStorage.getItem('marc_user_info') || localStorage.getItem('userInfo');
+            const authToken = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+
+            if (!userInfo || !authToken) {
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userInfo);
+                if (user.role !== 'admin') {
+                    if (showUnauthorizedMessage) {
+                        alert('Bạn không có quyền truy cập trang này!');
+                    }
+                    window.location.replace('../../pages/customer/index.html');
+                    return false;
+                }
+            } catch (error) {
+                clearAuthState();
+                window.location.replace('../../pages/auth/login.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!validateAdminAccess()) {
+                return;
+            }
+
+            try {
+                await Promise.all([loadProducts(), loadCollections()]);
+            } catch (error) {
+                console.error('Collection admin page error:', error);
+                document.getElementById('collectionsContainer').innerHTML = `<div class="empty-collections">${getErrorMessage(error, 'Không thể tải dữ liệu collection')}</div>`;
+            }
+
+            document.getElementById('collectionProductSearch').addEventListener('input', function() {
+                renderProductSelector(getSelectedProductIds());
+            });
+
+            document.getElementById('collectionForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const selectedProductIds = getSelectedProductIds();
+                if (!selectedProductIds.length) {
+                    alert('Vui lòng chọn ít nhất một sản phẩm cho collection.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('name', document.getElementById('collectionName').value.trim());
+                formData.append('description', document.getElementById('collectionDescription').value.trim());
+                formData.append('isActive', document.getElementById('collectionActive').checked);
+                formData.append('isFeatured', document.getElementById('collectionFeatured').checked);
+                formData.append('productIds', JSON.stringify(selectedProductIds));
+
+                const imageFile = document.getElementById('collectionImage').files[0];
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+
+                try {
+                    if (editingCollectionId) {
+                        await window.CollectionAPI.updateCollectionForm(editingCollectionId, formData);
+                    } else {
+                        await window.CollectionAPI.createCollectionForm(formData);
+                    }
+
+                    closeCollectionModal();
+                    await loadCollections();
+                    alert(editingCollectionId ? 'Cập nhật collection thành công!' : 'Tạo collection thành công!');
+                } catch (error) {
+                    alert('Lỗi lưu collection: ' + getErrorMessage(error, 'Không thể lưu collection'));
+                }
+            });
+        });
+
+        document.getElementById('collectionModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeCollectionModal();
+            }
+        });
+
+        window.openCollectionModal = openCollectionModal;
+        window.closeCollectionModal = closeCollectionModal;
+        window.editCollection = editCollection;
+        window.deleteCollection = deleteCollection;
+        window.logout = logout;
+    </script>
+</body>
+</html>

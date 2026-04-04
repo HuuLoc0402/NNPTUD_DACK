@@ -1,0 +1,158 @@
+:root {
+    --primary-color: #DC3545;
+    --text-dark: #2C3E50;
+    --text-light: #7F8C8D;
+    --bg-light: #F8F7F4;
+    --white: #FFFFFF;
+    --border-color: #E8E8E8;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg-light);
+    color: var(--text-dark);
+}
+
+.collections-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px;
+}
+
+.collections-hero {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 28px;
+    align-items: stretch;
+    margin-bottom: 42px;
+}
+
+.collections-hero-copy {
+    background: linear-gradient(135deg, #f3ebe6 0%, #fff8f2 100%);
+    border-radius: 28px;
+    padding: 44px;
+}
+
+.collections-hero-copy p {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+}
+
+.collections-hero-copy h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 56px;
+    line-height: 1.08;
+    margin-bottom: 16px;
+}
+
+.collections-hero-copy span {
+    display: block;
+    max-width: 560px;
+    font-size: 15px;
+    color: var(--text-light);
+}
+
+.collections-hero-media {
+    min-height: 320px;
+    border-radius: 28px;
+    background: url('../../assets/images/banner-lookbook.jpg') center/cover no-repeat;
+    overflow: hidden;
+}
+
+.collections-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.collection-card {
+    background: var(--white);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.collection-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 48px rgba(0,0,0,0.12);
+}
+
+.collection-card-image-wrap {
+    position: relative;
+    aspect-ratio: 4 / 5;
+}
+
+.collection-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.collection-card-count {
+    position: absolute;
+    left: 18px;
+    bottom: 18px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.94);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.collection-card-content {
+    padding: 22px;
+}
+
+.collection-card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px;
+    margin-bottom: 12px;
+}
+
+.collection-card-description {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-bottom: 18px;
+}
+
+.collection-card-link {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--primary-color);
+}
+
+.collections-empty {
+    padding: 40px;
+    text-align: center;
+    background: var(--white);
+    border-radius: 24px;
+    color: var(--text-light);
+}
+
+@media (max-width: 1024px) {
+    .collections-hero,
+    .collections-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .collections-page {
+        padding: 24px 20px 40px;
+    }
+
+    .collections-hero-copy {
+        padding: 28px;
+    }
+
+    .collections-hero-copy h1 {
+        font-size: 40px;
+    }
+}
