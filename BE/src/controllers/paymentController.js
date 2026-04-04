@@ -13,6 +13,10 @@ exports.findPaymentByOrder = (orderId) => {
   return Payment.findOne({ order: orderId }).sort({ createdAt: -1 });
 };
 
+exports.findPaymentByTransactionId = (transactionId) => {
+  return Payment.findOne({ transactionId }).populate('order').populate('user', 'fullName email phone');
+};
+
 exports.updatePayment = (paymentId, updateData) => {
   return Payment.findByIdAndUpdate(paymentId, updateData, {
     new: true,

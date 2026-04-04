@@ -15,17 +15,17 @@ const findAnyPurchasedOrder = (userId, productId) => Order.findOne({
   orderStatus: { $ne: 'cancelled' }
 }).sort({ createdAt: -1 });
 
-const findEligiblePaidOrder = (userId, productId) => Order.findOne({
+const findEligibleCompletedOrder = (userId, productId) => Order.findOne({
   user: userId,
   'items.product': productId,
-  orderStatus: { $ne: 'cancelled' },
+  orderStatus: 'completed',
   paymentStatus: 'completed'
 }).sort({ createdAt: -1 });
 
 const buildCommentEligibility = async (userId, productId) => {
-  const [purchasedOrder, paidOrder, existingComment] = await Promise.all([
+  const [purchasedOrder, completedOrder, existingComment] = await Promise.all([
     findAnyPurchasedOrder(userId, productId),
-    findEligiblePaidOrder(userId, productId),
+    findEligibleCompletedOrder(userId, productId),
     Comment.findOne({ user: userId, product: productId }).sort({ createdAt: -1 })
   ]);
 
@@ -36,7 +36,7 @@ const buildCommentEligibility = async (userId, productId) => {
       hasCompletedPayment: true,
       hasCommented: true,
       message: 'Bạn đã đánh giá sản phẩm này rồi.',
-      order: paidOrder || purchasedOrder,
+      order: completedOrder || purchasedOrder,
       comment: existingComment
     };
   }
@@ -53,13 +53,13 @@ const buildCommentEligibility = async (userId, productId) => {
     };
   }
 
-  if (!paidOrder) {
+  if (!completedOrder) {
     return {
       canComment: false,
       hasPurchased: true,
       hasCompletedPayment: false,
       hasCommented: false,
-      message: 'Bạn chỉ có thể đánh giá sau khi đơn hàng của sản phẩm này được thanh toán thành công.',
+      message: 'Bạn chỉ có thể đánh giá sau khi đơn hàng đã thanh toán thành công và được admin hoàn tất.',
       order: purchasedOrder,
       comment: null
     };
@@ -71,7 +71,7 @@ const buildCommentEligibility = async (userId, productId) => {
     hasCompletedPayment: true,
     hasCommented: false,
     message: 'Bạn có thể gửi đánh giá cho sản phẩm này.',
-    order: paidOrder,
+    order: completedOrder,
     comment: null
   };
 };

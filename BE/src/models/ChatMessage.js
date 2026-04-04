@@ -7,6 +7,12 @@ const chatMessageSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    conversationType: {
+      type: String,
+      enum: ['admin'],
+      default: 'admin',
+      index: true
+    },
     sender: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -26,7 +32,7 @@ const chatMessageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'image', 'file', 'notification'],
+      enum: ['text', 'image', 'file', 'notification', 'system'],
       default: 'text'
     },
     attachments: [
@@ -61,7 +67,7 @@ const chatMessageSchema = new mongoose.Schema(
 );
 
 // Create indexes
-chatMessageSchema.index({ conversationId: 1, createdAt: -1 });
+chatMessageSchema.index({ conversationId: 1, conversationType: 1, createdAt: -1 });
 chatMessageSchema.index({ sender: 1 });
 chatMessageSchema.index({ isRead: 1 });
 

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chính Sách Đổi Trả - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <style>
+        :root {
+            --policy-accent: #a63b45;
+            --policy-dark: #222831;
+            --policy-muted: #616b75;
+            --policy-surface: rgba(255, 255, 255, 0.92);
+            --policy-border: rgba(34, 40, 49, 0.08);
+            --policy-shadow: 0 24px 60px rgba(34, 40, 49, 0.12);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(166, 59, 69, 0.12), transparent 24%),
+                linear-gradient(180deg, #fffaf6 0%, #fff 42%, #f5efe9 100%);
+            color: var(--policy-dark);
+        }
+
+        .policy-shell {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 28px 24px 72px;
+        }
+
+        .policy-hero {
+            display: block;
+        }
+
+        .policy-image-card {
+            background: var(--policy-surface);
+            border: 1px solid var(--policy-border);
+            box-shadow: var(--policy-shadow);
+            backdrop-filter: blur(12px);
+        }
+
+        .policy-image-card {
+            border-radius: 32px;
+            padding: 18px;
+        }
+
+        .policy-image-frame {
+            overflow: hidden;
+            border-radius: 24px;
+            background: linear-gradient(180deg, #fff, #f3ece6);
+            border: 1px solid rgba(34, 40, 49, 0.06);
+        }
+
+        .policy-image-frame img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        @media (max-width: 960px) {
+            .policy-shell {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .policy-shell {
+                padding: 20px 16px 56px;
+            }
+
+            .policy-image-card {
+                border-radius: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="policy-shell">
+        <section class="policy-hero">
+            <section class="policy-image-card" aria-labelledby="policyImageTitle">
+                <div class="policy-image-frame">
+                    <img src="../../assets/images/ch%C3%ADnh%20s%C3%A1ch%20%C4%91%E1%BB%95i%20tr%E1%BA%A3.png" alt="Hình chính sách đổi trả hàng của MARC Fashion">
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCommonComponents();
+            updateCartBadge();
+            updateWishlistBadge();
+            updateHeaderAuth();
+            await window.syncWishlistFromServer?.({ mergeLocal: true });
+        });
+    </script>
+</body>
+</html>

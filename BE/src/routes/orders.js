@@ -5,6 +5,8 @@ const cartController = require('../controllers/cartController');
 const orderController = require('../controllers/orderController');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const { findMatchingVariant, getImagesForColor, normalizeColorName } = require('../utils/productVariant');
+const { validateOrderInventory, applyInventoryForOrder } = require('../utils/orderInventory');
+const { sendInvoiceEmailForCompletedOrder } = require('../utils/invoiceMailer');
 
 const router = express.Router();
 
@@ -72,6 +74,12 @@ router.post('/', authenticate, async (req, res, next) => {
     const tax = Number(req.body.tax || 0);
     const discount = Number(req.body.discount || 0);
     const totalAmount = Number(req.body.totalAmount || subtotal + shippingFee + tax - discount);
+
+    const stockValidation = await validateOrderInventory({ items: orderItems });
+    if (!stockValidation.ok) {
+      return res.status(400).json({ success: false, message: stockValidation.message });
+    }
+
     const order = await orderController.createOrder({
       orderCode: `ORD${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       user: req.userId,
@@ -89,10 +97,18 @@ router.post('/', authenticate, async (req, res, next) => {
       notes: req.body.notes || ''
     });
 
-    try {
-      await cartController.clearCart(req.userId);
-    } catch (error) {
-      console.error('Clear cart after order error:', error.message);
+    if ((req.body.paymentMethod || 'cod') !== 'vnpay') {
+      try {
+        await applyInventoryForOrder(order);
+      } catch (error) {
+        return res.status(400).json({ success: false, message: error.message || 'Không thể cập nhật tồn kho cho đơn hàng.' });
+      }
+
+      try {
+        await cartController.clearCart(req.userId);
+      } catch (error) {
+        console.error('Clear cart after order error:', error.message);
+      }
     }
 
     const populatedOrder = await orderController.findOrderById(order._id);
@@ -148,7 +164,7 @@ router.patch('/:id/cancel', authenticate, async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền hủy đơn hàng này' });
     }
 
-    if (['cancelled', 'delivered'].includes(order.orderStatus)) {
+    if (['cancelled', 'delivered', 'completed'].includes(order.orderStatus)) {
       return res.status(400).json({ success: false, message: 'Không thể hủy đơn hàng ở trạng thái hiện tại' });
     }
 
@@ -171,7 +187,14 @@ router.put('/:id/status', authenticate, adminOnly, async (req, res, next) => {
 
     if (updateData.orderStatus === 'delivered') {
       updateData.deliveredAt = new Date();
+    }
+
+    if (updateData.orderStatus === 'completed') {
+      updateData.completedAt = new Date();
       updateData.paymentStatus = 'completed';
+      if (!updateData.deliveredAt) {
+        updateData.deliveredAt = new Date();
+      }
     }
 
     if (updateData.orderStatus === 'cancelled') {
@@ -181,6 +204,21 @@ router.put('/:id/status', authenticate, adminOnly, async (req, res, next) => {
     const order = await orderController.updateOrder(req.params.id, updateData);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (['delivered', 'completed'].includes(updateData.orderStatus) && !order.inventoryAdjustedAt) {
+      try {
+        await applyInventoryForOrder(order);
+      } catch (error) {
+        return res.status(400).json({ success: false, message: error.message || 'Không thể cập nhật tồn kho cho đơn hàng.' });
+      }
+    }
+
+    if (order.paymentStatus === 'completed') {
+      const invoiceResult = await sendInvoiceEmailForCompletedOrder({ order });
+      if (!invoiceResult.success && !invoiceResult.skipped) {
+        console.error('Send invoice email after admin completion error:', invoiceResult.error || invoiceResult.reason);
+      }
     }
 
     return res.status(200).json({ success: true, data: orderController.formatOrder(order) });

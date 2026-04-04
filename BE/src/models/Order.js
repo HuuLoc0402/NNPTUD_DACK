@@ -70,7 +70,7 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'cancelled', 'returned'],
+      enum: ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'completed', 'cancelled', 'returned'],
       default: 'pending'
     },
     transactionId: String,
@@ -78,6 +78,10 @@ const orderSchema = new mongoose.Schema(
     trackingNumber: String,
     estimatedDelivery: Date,
     deliveredAt: Date,
+    completedAt: Date,
+    inventoryAdjustedAt: Date,
+    invoiceEmailSentAt: Date,
+    invoiceEmailRecipient: String,
     cancelledAt: Date,
     cancelReason: String
   },

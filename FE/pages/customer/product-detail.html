@@ -175,7 +175,7 @@
 
                     <div class="review-form is-locked" id="reviewFormWrapper">
                         <h4>Viết đánh giá của bạn</h4>
-                        <p class="review-permission-message" id="reviewPermissionMessage">Bạn chỉ có thể đánh giá sau khi mua và thanh toán thành công sản phẩm này.</p>
+                        <p class="review-permission-message" id="reviewPermissionMessage">Bạn chỉ có thể đánh giá sau khi mua, thanh toán thành công và đơn hàng đã được admin hoàn tất.</p>
                         <form id="submitReviewForm">
                             <div class="form-group">
                                 <label>Đánh Giá</label>
@@ -668,7 +668,7 @@
                             <span class="review-date">${escapeHtml(formatReviewDate(comment.createdAt))}</span>
                         </div>
                         <div class="review-rating">${renderStars(comment.rating || 0)}</div>
-                        ${comment.isVerified ? '<span class="review-verified">Đã mua hàng và thanh toán thành công</span>' : ''}
+                        ${comment.isVerified ? '<span class="review-verified">Đã mua hàng, thanh toán thành công và đủ điều kiện đánh giá</span>' : ''}
                         ${comment.title ? `<div class="review-title">${escapeHtml(comment.title)}</div>` : ''}
                         <div class="review-text">${escapeHtml(comment.content)}</div>
                     </div>
@@ -717,7 +717,7 @@
 
         async function loadReviewEligibility(productId) {
             if (!window.apiClient?.isAuthenticated()) {
-                setReviewFormLockedState(true, 'Vui lòng đăng nhập và hoàn tất đơn hàng đã thanh toán để gửi đánh giá.');
+                setReviewFormLockedState(true, 'Vui lòng đăng nhập và chỉ đánh giá sau khi đơn hàng đã thanh toán thành công và được admin hoàn tất.');
                 return;
             }
 

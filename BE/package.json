@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
+    "check:vnpay": "node scripts/check-vnpay.js",
+    "inspect:vnpay:last": "node scripts/inspect-last-vnpay.js",
     "test": "jest --detectOpenHandles"
   },
   "keywords": [

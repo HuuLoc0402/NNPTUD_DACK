@@ -150,7 +150,6 @@
 
         function renderCategories(categories) {
             const grid = document.getElementById('categoriesGrid');
-            window.homepageCategories = Array.isArray(categories) ? categories : [];
             grid.innerHTML = '';
 
             if (categories.length === 0) {

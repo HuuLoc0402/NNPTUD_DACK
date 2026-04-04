@@ -3,62 +3,186 @@ const axios = require('axios');
 
 class PaymentGateway {
   // ============= VNPAY =============
-  static generateVNPayURL(orderData) {
-    const tmnCode = process.env.VNPAY_TMNCODE;
-    const secretKey = process.env.VNPAY_HASHSECRET;
-    const vnpayUrl = process.env.VNPAY_URL;
-    const returnUrl = `${process.env.CLIENT_URL}/payment-callback`;
+  static getVNPayRequestHashMode() {
+    const mode = String(process.env.VNPAY_HASH_MODE || 'raw').trim().toLowerCase();
+    return mode === 'raw' ? 'raw' : 'encoded';
+  }
 
-    const date = new Date();
-    const createDate = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
+  static normalizeVNPayParams(params = {}) {
+    return Object.entries(params).reduce((acc, [key, value]) => {
+      if (value === undefined || value === null || value === '') {
+        return acc;
+      }
 
-    const params = {
+      acc[key] = String(value);
+      return acc;
+    }, {});
+  }
+
+  static buildVNPayDateParts(date = new Date()) {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(date).reduce((acc, part) => {
+      if (part.type !== 'literal') {
+        acc[part.type] = part.value;
+      }
+      return acc;
+    }, {});
+  }
+
+  static buildVNPayTimestamp(date = new Date()) {
+    const parts = this.buildVNPayDateParts(date);
+    return `${parts.year}${parts.month}${parts.day}${parts.hour}${parts.minute}${parts.second}`;
+  }
+
+  static buildVNPayHashData(params = {}, mode = 'encoded') {
+    const normalizedParams = this.normalizeVNPayParams(params);
+
+    return Object.keys(params)
+      .sort()
+      .map((key) => {
+        if (mode === 'raw') {
+          return `${key}=${normalizedParams[key]}`;
+        }
+
+        const queryParams = new URLSearchParams([[key, normalizedParams[key]]]);
+        return queryParams.toString();
+      })
+      .join('&');
+  }
+
+  static buildVNPayQueryString(params = {}) {
+    const normalizedParams = this.normalizeVNPayParams(params);
+    const queryParams = new URLSearchParams();
+
+    Object.keys(normalizedParams)
+      .sort()
+      .forEach((key) => {
+        queryParams.append(key, normalizedParams[key]);
+      });
+
+    return queryParams.toString();
+  }
+
+  static getVNPayBaseUrl() {
+    const configuredUrl = String(process.env.VNPAY_URL || '').trim().replace(/\/+$/, '');
+    if (!configuredUrl) {
+      return '';
+    }
+
+    if (configuredUrl.includes('/paymentv2/')) {
+      return configuredUrl;
+    }
+
+    try {
+      const parsedUrl = new URL(configuredUrl);
+      return `${parsedUrl.origin}/paymentv2/vpcpay.html`;
+    } catch (error) {
+      return configuredUrl.replace(/\/paygate$/i, '') + '/paymentv2/vpcpay.html';
+    }
+  }
+
+  static generateVNPayRequestData(orderData) {
+    const tmnCode = String(process.env.VNPAY_TMNCODE || '').trim();
+    const secretKey = String(process.env.VNPAY_HASHSECRET || '').trim();
+    const vnpayUrl = this.getVNPayBaseUrl();
+    const configuredReturnUrl = String(process.env.VNPAY_RETURN_URL || '').trim();
+    const returnUrl = orderData.returnUrl || configuredReturnUrl || `${process.env.CLIENT_URL}/payment-callback`;
+
+    const createDate = this.buildVNPayTimestamp(new Date());
+    const expireDate = this.buildVNPayTimestamp(new Date(Date.now() + 15 * 60 * 1000));
+
+    const params = this.normalizeVNPayParams({
       vnp_Version: '2.1.0',
       vnp_Command: 'pay',
       vnp_TmnCode: tmnCode,
       vnp_Locale: 'vn',
       vnp_CurrCode: 'VND',
-      vnp_TxnRef: orderData.orderCode,
-      vnp_OrderInfo: `Payment for order ${orderData.orderCode}`,
+      vnp_TxnRef: orderData.transactionRef,
+      vnp_OrderInfo: orderData.orderInfo || `Payment for order ${orderData.orderCode}`,
       vnp_OrderType: 'other',
-      vnp_Amount: orderData.totalAmount * 100, // VNPay uses smallest unit
+      vnp_Amount: Math.round(Number(orderData.totalAmount || 0) * 100),
       vnp_ReturnUrl: returnUrl,
       vnp_IpAddr: orderData.ipAddress || '127.0.0.1',
-      vnp_CreateDate: createDate
-    };
+      vnp_CreateDate: createDate,
+      vnp_ExpireDate: expireDate
+    });
 
-    // Sort parameters
-    const sortedParams = Object.keys(params).sort().reduce((acc, key) => {
-      acc[key] = params[key];
-      return acc;
-    }, {});
+    if (!tmnCode || !secretKey || !vnpayUrl || !params.vnp_ReturnUrl) {
+      throw new Error('VNPay configuration is incomplete');
+    }
 
-    // Create signature
-    const signData = new URLSearchParams(sortedParams).toString();
+    const hashMode = this.getVNPayRequestHashMode();
+    const signData = this.buildVNPayHashData(params, hashMode);
+    const queryString = this.buildVNPayQueryString(params);
     const hmac = crypto.createHmac('sha512', secretKey);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-    sortedParams['vnp_SecureHash'] = signed;
 
-    return `${vnpayUrl}?${new URLSearchParams(sortedParams).toString()}`;
+    return {
+      vnpayUrl,
+      returnUrl,
+      hashMode,
+      params,
+      queryString,
+      signData,
+      secureHash: signed,
+      paymentUrl: `${vnpayUrl}?${queryString}&vnp_SecureHash=${signed}`
+    };
+  }
+
+  static generateVNPayURL(orderData) {
+    return this.generateVNPayRequestData(orderData).paymentUrl;
+  }
+
+  static extractVNPayParams(source = {}) {
+    return Object.keys(source).reduce((acc, key) => {
+      if (key.startsWith('vnp_')) {
+        acc[key] = source[key];
+      }
+      return acc;
+    }, {});
   }
 
   static verifyVNPayResponse(vnp_Params) {
-    const secretKey = process.env.VNPAY_HASHSECRET;
-    const secureHash = vnp_Params['vnp_SecureHash'];
+    const secretKey = String(process.env.VNPAY_HASHSECRET || '').trim();
+    const params = { ...vnp_Params };
+    const secureHash = params['vnp_SecureHash'];
 
-    delete vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHashType'];
+    delete params['vnp_SecureHash'];
+    delete params['vnp_SecureHashType'];
 
-    const sortedParams = Object.keys(vnp_Params).sort().reduce((acc, key) => {
-      acc[key] = vnp_Params[key];
-      return acc;
-    }, {});
-
-    const signData = new URLSearchParams(sortedParams).toString();
+    const signData = this.buildVNPayHashData(params, 'encoded');
     const hmac = crypto.createHmac('sha512', secretKey);
     const computed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
     return computed === secureHash;
+  }
+
+  static getVNPayResponseMessage(responseCode) {
+    const code = String(responseCode || '');
+    const map = {
+      '00': 'Thanh toán thành công.',
+      '07': 'Giao dịch bị nghi ngờ gian lận.',
+      '09': 'Thẻ hoặc tài khoản chưa đăng ký Internet Banking.',
+      '10': 'Xác thực thông tin thẻ hoặc tài khoản không đúng quá 3 lần.',
+      '11': 'Giao dịch đã hết hạn chờ thanh toán.',
+      '12': 'Thẻ hoặc tài khoản đã bị khóa.',
+      '13': 'Bạn nhập sai mật khẩu xác thực giao dịch.',
+      '24': 'Bạn đã hủy giao dịch.',
+      '51': 'Tài khoản không đủ số dư để thanh toán.',
+      '65': 'Tài khoản đã vượt quá hạn mức giao dịch trong ngày.',
+      '75': 'Ngân hàng thanh toán đang bảo trì.',
+      '79': 'Bạn nhập sai mật khẩu thanh toán quá số lần quy định.'
+    };
+
+    return map[code] || 'Thanh toán không thành công.';
   }
 
   // ============= MOMO =============

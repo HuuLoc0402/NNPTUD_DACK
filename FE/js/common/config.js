@@ -1,4 +1,4 @@
-const DEFAULT_LOCAL_ORIGIN = 'http://localhost:5000';
+const DEFAULT_LOCAL_ORIGIN = 'http://127.0.0.1:5000';
 
 function resolveApiOrigin() {
     const { protocol, origin, hostname, port } = window.location;

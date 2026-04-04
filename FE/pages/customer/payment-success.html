@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán Thành Công - MARC Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <style>
+        :root {
+            --success: #1f8f5f;
+            --success-soft: #e7f6ee;
+            --text-dark: #2C3E50;
+            --text-light: #6c7a89;
+            --surface: #ffffff;
+            --background: linear-gradient(180deg, #f4efe7 0%, #f8f7f4 100%);
+            --border: #e4ddd2;
+            --accent: #c44b3b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-dark);
+            background: var(--background);
+        }
+
+        .page-wrap {
+            max-width: 980px;
+            margin: 40px auto 80px;
+            padding: 0 20px;
+        }
+
+        .result-card {
+            background: rgba(255,255,255,0.94);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(67, 54, 39, 0.12);
+        }
+
+        .hero {
+            padding: 42px 40px 30px;
+            text-align: center;
+            background: radial-gradient(circle at top, #ffffff 0%, #f7f2ea 70%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero-icon {
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--success-soft);
+            color: var(--success);
+            font-size: 36px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+        }
+
+        .hero p {
+            margin: 12px auto 0;
+            max-width: 640px;
+            color: var(--text-light);
+            font-size: 15px;
+        }
+
+        .content {
+            padding: 30px 40px 40px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+        }
+
+        .panel {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 22px;
+        }
+
+        .panel h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: 13px;
+        }
+
+        .meta-row:last-child { border-bottom: none; }
+
+        .meta-row span:last-child {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 68px 1fr auto;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .item-row img {
+            width: 68px;
+            height: 86px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: #f4f4f4;
+        }
+
+        .item-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .item-meta {
+            color: var(--text-light);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .item-price {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .tip {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: #fcf7ef;
+            color: #8a5d2f;
+            font-size: 13px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .actions a {
+            text-decoration: none;
+        }
+
+        .btn-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 180px;
+            padding: 13px 18px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-primary {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: var(--text-dark);
+            border: 1px solid var(--border);
+        }
+
+        .empty-note {
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                padding: 24px 20px 28px;
+            }
+
+            .hero {
+                padding: 32px 20px 24px;
+            }
+
+            .hero h1 {
+                font-size: 28px;
+            }
+
+            .item-row {
+                grid-template-columns: 56px 1fr;
+            }
+
+            .item-price {
+                grid-column: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="page-wrap">
+        <section class="result-card">
+            <div class="hero">
+                <div class="hero-icon"><i class="fas fa-check"></i></div>
+                <h1>Thanh toán thành công</h1>
+                <p id="successMessage">Giao dịch của bạn đã được xác nhận. Đơn hàng đang chờ admin xử lý.</p>
+            </div>
+
+            <div class="content">
+                <div class="panel">
+                    <h2>Sản phẩm đã thanh toán</h2>
+                    <div id="successItems" class="items-list">
+                        <div class="empty-note">Đang tải thông tin đơn hàng...</div>
+                    </div>
+                    <div class="tip">Sau khi admin chuyển đơn hàng sang trạng thái hoàn tất, bạn có thể vào trang chi tiết sản phẩm để gửi đánh giá.</div>
+                </div>
+
+                <div class="panel">
+                    <h2>Thông tin giao dịch</h2>
+                    <div id="successMeta">
+                        <div class="meta-row"><span>Mã đơn hàng</span><span>Đang tải...</span></div>
+                    </div>
+                    <div class="actions">
+                        <a href="order-history.html" class="btn-link btn-primary">Xem lịch sử đơn hàng</a>
+                        <a href="product-list.html" class="btn-link btn-secondary">Tiếp tục mua sắm</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="../../js/common/config.js"></script>
+    <script src="../../js/common/api.js"></script>
+    <script src="../../js/components/load-components.js"></script>
+    <script src="../../js/shared.js"></script>
+    <script>
+        function getQueryParam(key) {
+            return new URLSearchParams(window.location.search).get(key) || '';
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+        }
+
+        function resolveImageUrl(path) {
+            return window.CONFIG?.resolveMediaUrl(path, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
+        }
+
+        function renderMeta(order) {
+            const paymentMethod = String(order?.paymentMethod || getQueryParam('paymentMethod') || 'vnpay').toUpperCase();
+            document.getElementById('successMeta').innerHTML = `
+                <div class="meta-row"><span>Mã đơn hàng</span><span>${escapeHtml(order?.orderCode || order?._id || getQueryParam('orderId'))}</span></div>
+                <div class="meta-row"><span>Thanh toán</span><span>${escapeHtml(paymentMethod)}</span></div>
+                <div class="meta-row"><span>Trạng thái thanh toán</span><span>${escapeHtml(order?.paymentStatus || 'completed')}</span></div>
+                <div class="meta-row"><span>Tổng tiền</span><span>${formatCurrency(order?.totalAmount || 0)}</span></div>
+            `;
+        }
+
+        function renderItems(order) {
+            const items = Array.isArray(order?.items) ? order.items : [];
+            const container = document.getElementById('successItems');
+
+            if (!items.length) {
+                container.innerHTML = '<div class="empty-note">Không có dữ liệu sản phẩm trong đơn hàng.</div>';
+                return;
+            }
+
+            container.innerHTML = items.map((item) => `
+                <div class="item-row">
+                    <img src="${resolveImageUrl(item.productImage)}" alt="${escapeHtml(item.productName || 'Sản phẩm')}" onerror="this.src='../../assets/images/banner1.png'">
+                    <div>
+                        <div class="item-name">${escapeHtml(item.productName || 'Sản phẩm')}</div>
+                        <div class="item-meta">SL: ${Number(item.quantity || 0)}${item.selectedSize ? ` · Size: ${escapeHtml(item.selectedSize)}` : ''}${item.selectedColor ? ` · Màu: ${escapeHtml(item.selectedColor)}` : ''}</div>
+                    </div>
+                    <div class="item-price">${formatCurrency(item.totalPrice || 0)}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadOrder() {
+            const message = getQueryParam('message');
+            if (message) {
+                document.getElementById('successMessage').textContent = message;
+            }
+
+            const orderId = getQueryParam('orderId');
+            if (!orderId || !window.apiClient?.isAuthenticated()) {
+                renderMeta(null);
+                renderItems(null);
+                return;
+            }
+
+            try {
+                const response = await window.OrderAPI.getOrderDetail(orderId);
+                const order = response?.data || null;
+                renderMeta(order);
+                renderItems(order);
+            } catch (error) {
+                console.error('Cannot load payment success order detail:', error);
+                renderMeta(null);
+                renderItems(null);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCommonComponents();
+            if (typeof window.clearStoredCart === 'function') {
+                window.clearStoredCart();
+            } else if (typeof window.persistStoredCart === 'function') {
+                window.persistStoredCart([]);
+            }
+            updateCartBadge();
+            updateWishlistBadge();
+            updateHeaderAuth();
+            await loadOrder();
+        });
+    </script>
+</body>
+</html>

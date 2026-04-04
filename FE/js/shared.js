@@ -217,6 +217,11 @@ function toggleWishlistItem(product) {
         return { active: false, items: wishlist };
     }
 
+    const user = requireCustomerAuth({ redirectPath: getCurrentPathWithQuery() });
+    if (!user) {
+        return { active: false, items: wishlist, requiresAuth: true };
+    }
+
     wishlist.unshift(normalizedItem);
     persistWishlist(wishlist);
     if (canSyncWishlistWithServer()) {
@@ -405,6 +410,44 @@ function updateHeaderAuth() {
     }
 }
 
+function getSharedAssetUrl(relativePath) {
+    const sharedScript = Array.from(document.scripts).find((script) => script.src && script.src.includes('/js/shared.js'));
+    if (!sharedScript) {
+        return null;
+    }
+
+    return new URL(relativePath, sharedScript.src).href;
+}
+
+function shouldLoadChatWidget() {
+    const path = String(window.location.pathname || '').toLowerCase();
+    return path.includes('/pages/customer/') && !path.includes('/pages/auth/');
+}
+
+function ensureChatWidgetAssets() {
+    if (!shouldLoadChatWidget() || document.querySelector('script[data-marc-chat-widget]')) {
+        return;
+    }
+
+    const styleHref = getSharedAssetUrl('../css/common/chat-widget.css');
+    if (styleHref && !document.querySelector('link[data-marc-chat-widget]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = styleHref;
+        link.setAttribute('data-marc-chat-widget', 'true');
+        document.head.appendChild(link);
+    }
+
+    const scriptSrc = getSharedAssetUrl('chat-widget.js');
+    if (scriptSrc) {
+        const script = document.createElement('script');
+        script.src = scriptSrc;
+        script.defer = true;
+        script.setAttribute('data-marc-chat-widget', 'true');
+        document.body.appendChild(script);
+    }
+}
+
 function clearAuthStorage() {
     if (window.apiClient?.logout) {
         window.apiClient.logout();
@@ -460,6 +503,7 @@ window.addEventListener('pageshow', function() {
     updateCartBadge();
     updateWishlistBadge();
     updateHeaderAuth();
+    ensureChatWidgetAssets();
 
     if (canSyncWishlistWithServer()) {
         syncWishlistFromServer({ mergeLocal: !hasHydratedWishlistFromServer });

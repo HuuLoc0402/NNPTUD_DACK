@@ -1143,16 +1143,24 @@
                 }
 
                 if (getPaymentMethod() === 'vnpay') {
-                    const paymentResponse = await window.apiClient.post('/payments/vnpay', { orderId: order._id });
-                    const paymentUrl = paymentResponse?.data?.paymentUrl;
+                    try {
+                        const paymentResponse = await window.apiClient.post('/payments/vnpay', {
+                            orderId: order._id,
+                            clientBaseUrl: window.location.origin
+                        });
+                        const paymentUrl = paymentResponse?.data?.paymentUrl;
 
-                    if (!paymentUrl) {
-                        throw new Error('Không thể khởi tạo thanh toán VNPay');
+                        if (!paymentUrl) {
+                            throw new Error('Không thể khởi tạo thanh toán VNPay');
+                        }
+
+                        window.location.href = paymentUrl;
+                        return;
+                    } catch (paymentError) {
+                        console.error('VNPay init error:', paymentError);
+                        window.location.href = `payment-failed.html?orderId=${encodeURIComponent(order._id)}&paymentStatus=failed&paymentMethod=vnpay&message=${encodeURIComponent(paymentError.message || 'Đơn hàng đã được tạo nhưng chưa khởi tạo được VNPay.')}`;
+                        return;
                     }
-
-                    persistCartItems([]);
-                    window.location.href = paymentUrl;
-                    return;
                 }
 
                 persistCartItems([]);

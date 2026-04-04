@@ -53,6 +53,33 @@
             font-size: 14px;
         }
 
+        .payment-return-banner {
+            display: none;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .payment-return-banner.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .payment-return-banner.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .payment-return-banner.info {
+            display: block;
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
         .filters {
             display: flex;
             gap: 15px;
@@ -121,6 +148,7 @@
         .badge-processing { background: #fff3cd; color: #856404; }
         .badge-shipped { background: #fff3cd; color: #856404; }
         .badge-delivered { background: #d4edda; color: #155724; }
+        .badge-completed { background: #cfe9d7; color: #14532d; }
         .badge-cancelled { background: #f8d7da; color: #721c24; }
 
         .order-items-summary {
@@ -354,6 +382,8 @@
             <p>Xem chi tiết tất cả các đơn hàng của bạn</p>
         </div>
 
+        <div id="paymentReturnBanner" class="payment-return-banner"></div>
+
         <div class="filters">
             <input type="text" id="searchOrder" placeholder="Tìm mã đơn hàng..." onkeyup="filterOrders()">
             <select id="statusFilter" onchange="filterOrders()">
@@ -362,6 +392,7 @@
                 <option value="processing">Đang Xử Lý</option>
                 <option value="shipped">Đã Gửi</option>
                 <option value="delivered">Đã Giao</option>
+                <option value="completed">Hoàn Tất</option>
                 <option value="cancelled">Đã Hủy</option>
             </select>
             <input type="date" id="fromDate" onchange="filterOrders()">
@@ -400,6 +431,88 @@
     <script src="../../js/shared.js"></script>
     <script>
         let allOrders = [];
+        let hasAutoOpenedOrder = false;
+
+        function getPaymentStatusText(status) {
+            const paymentStatusMap = {
+                pending: 'Chờ thanh toán',
+                completed: 'Đã thanh toán',
+                failed: 'Thanh toán thất bại',
+                cancelled: 'Đã hủy thanh toán'
+            };
+
+            return paymentStatusMap[status] || status || 'Chưa xác định';
+        }
+
+        function showPaymentReturnBanner(message, tone = 'info') {
+            const banner = document.getElementById('paymentReturnBanner');
+            if (!banner) {
+                return;
+            }
+
+            if (!message) {
+                banner.className = 'payment-return-banner';
+                banner.textContent = '';
+                banner.style.display = 'none';
+                return;
+            }
+
+            banner.className = `payment-return-banner ${tone}`;
+            banner.textContent = message;
+            banner.style.display = 'block';
+        }
+
+        function applyPaymentReturnState() {
+            const params = new URLSearchParams(window.location.search);
+            const paymentStatus = params.get('paymentStatus');
+            const message = params.get('message');
+            const clearCart = params.get('clearCart') === '1';
+
+            if (!paymentStatus && !message) {
+                return;
+            }
+
+            if (clearCart) {
+                if (typeof window.clearStoredCart === 'function') {
+                    window.clearStoredCart();
+                } else if (typeof window.persistStoredCart === 'function') {
+                    window.persistStoredCart([]);
+                }
+            }
+
+            const tone = paymentStatus === 'completed'
+                ? 'success'
+                : paymentStatus === 'pending'
+                    ? 'info'
+                    : 'error';
+
+            const fallbackMessage = paymentStatus === 'completed'
+                ? 'Thanh toán đã được xác nhận thành công.'
+                : paymentStatus === 'pending'
+                    ? 'Đơn hàng đã được tạo, nhưng thanh toán chưa hoàn tất.'
+                    : 'Thanh toán không thành công. Vui lòng thử lại.';
+
+            showPaymentReturnBanner(message || fallbackMessage, tone);
+        }
+
+        function autoOpenRequestedOrder() {
+            if (hasAutoOpenedOrder) {
+                return;
+            }
+
+            const orderId = new URLSearchParams(window.location.search).get('orderId');
+            if (!orderId) {
+                return;
+            }
+
+            const matchedOrder = allOrders.find(order => order._id === orderId);
+            if (!matchedOrder) {
+                return;
+            }
+
+            hasAutoOpenedOrder = true;
+            viewOrderDetail(orderId);
+        }
 
         function ensureCustomerAccount() {
             const user = window.getStoredUser?.();
@@ -433,6 +546,7 @@
                 if (data.success && Array.isArray(data.data)) {
                     allOrders = data.data;
                     renderOrders(allOrders);
+                    autoOpenRequestedOrder();
                 } else {
                     showEmptyState();
                 }
@@ -456,6 +570,7 @@
                 'processing': 'Đang Xử Lý',
                 'shipped': 'Đã Gửi',
                 'delivered': 'Đã Giao',
+                'completed': 'Hoàn Tất',
                 'cancelled': 'Đã Hủy'
             };
             
@@ -464,6 +579,7 @@
                 'processing': 'badge-processing',
                 'shipped': 'badge-shipped',
                 'delivered': 'badge-delivered',
+                'completed': 'badge-completed',
                 'cancelled': 'badge-cancelled'
             };
             
@@ -477,12 +593,13 @@
                 const badgeClass = statusBadgeMap[order.orderStatus] || 'badge-pending';
                 
                 return `
-                    <div class="order-card">
+                    <div class="order-card" data-order-id="${order._id}">
                         <div class="order-header">
                             <div class="order-info">
                                 <h3>#${order._id?.slice(-8).toUpperCase()}</h3>
                                 <p>Ngày đặt: ${new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
                                 <p>Địa chỉ: ${order.shippingAddress || 'N/A'}</p>
+                                <p>Thanh toán: ${getPaymentStatusText(order.paymentStatus)}</p>
                             </div>
                             <div class="order-status">
                                 <span class="status-badge ${badgeClass}">${statusText}</span>
@@ -519,6 +636,7 @@
                         'processing': 'Đang Xử Lý',
                         'shipped': 'Đã Gửi',
                         'delivered': 'Đã Giao',
+                        'completed': 'Hoàn Tất',
                         'cancelled': 'Đã Hủy'
                     };
                     
@@ -551,6 +669,17 @@
                             <div class="detail-item">
                                 <label>Trạng Thái</label>
                                 <p>${statusMap[order.orderStatus] || order.orderStatus}</p>
+                            </div>
+                        </div>
+
+                        <div class="detail-row">
+                            <div class="detail-item">
+                                <label>Phương Thức Thanh Toán</label>
+                                <p>${order.paymentMethod || 'N/A'}</p>
+                            </div>
+                            <div class="detail-item">
+                                <label>Trạng Thái Thanh Toán</label>
+                                <p>${getPaymentStatusText(order.paymentStatus)}</p>
                             </div>
                         </div>
 
@@ -668,6 +797,7 @@
         // Load orders on page load
         document.addEventListener('DOMContentLoaded', async function() {
             await loadCommonComponents();
+            applyPaymentReturnState();
             updateCartBadge();
             updateWishlistBadge();
             updateHeaderAuth();

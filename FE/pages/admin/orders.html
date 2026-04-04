@@ -27,6 +27,60 @@
         .order-items table { width: 100%; margin: 0; }
         .order-items th { background: #F8F7F4; padding: 10px; font-size: 12px; }
         .order-items td { padding: 10px; }
+        .detail-item select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #DADADA;
+            border-radius: 4px;
+            background: #FFFFFF;
+            font-size: 14px;
+            color: #2C3E50;
+            font-family: 'Poppins', sans-serif;
+        }
+        .action-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-sm { padding: 10px 14px; font-size: 12px; }
+        .btn-info { background: #d1ecf1; color: #0c5460; }
+        .btn-info:hover { background: #bee5eb; }
+        .btn-neutral { background: #f1f1f1; color: #2C3E50; }
+        .btn-neutral:hover { background: #e5e5e5; }
+        .btn-save-status {
+            background: #2C3E50;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-save-status:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .modal-status-message {
+            margin-right: auto;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 12px;
+            border-radius: 4px;
+            display: none;
+        }
+        .modal-status-message.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+        }
+        .modal-status-message.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+        }
         
         @media (max-width: 768px) {
             .detail-row { grid-template-columns: 1fr; }
@@ -48,6 +102,7 @@
                 <li><a href="orders.html" class="active"><i class="fas fa-shopping-cart"></i> ĐƠN HÀNG</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> NGƯỜI DÙNG</a></li>
                 <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> THỐNG KÊ</a></li>
+                <li><a href="chats.html"><i class="fas fa-comments"></i> CHAT</a></li>
                 <li><hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);"></li>
                 <li><a href="../customer/index.html"><i class="fas fa-arrow-left"></i> VỀ TRANG CHỦ</a></li>
                 <li><a href="javascript:logout();"><i class="fas fa-sign-out-alt"></i> ĐĂNG XUẤT</a></li>
@@ -65,10 +120,13 @@
                     <select id="statusFilter" onchange="filterOrders()">
                         <option value="">Tất cả trạng thái</option>
                         <option value="pending">Chờ Xác Nhận</option>
+                        <option value="confirmed">Đã Xác Nhận</option>
                         <option value="processing">Đang Xử Lý</option>
-                        <option value="shipped">Đã Gửi</option>
+                        <option value="shipped">Đang Giao</option>
                         <option value="delivered">Đã Giao</option>
+                        <option value="completed">Hoàn Tất</option>
                         <option value="cancelled">Đã Hủy</option>
+                        <option value="returned">Hoàn Trả</option>
                     </select>
                     <input type="date" id="fromDate" onchange="filterOrders()">
                     <input type="date" id="toDate" onchange="filterOrders()">
@@ -126,7 +184,27 @@
                     </div>
                     <div class="detail-item">
                         <label>Trạng Thái Đơn Hàng</label>
-                        <p id="orderStatus">-</p>
+                        <select id="orderStatusSelect">
+                            <option value="pending">Chờ Xác Nhận</option>
+                            <option value="confirmed">Đã Xác Nhận</option>
+                            <option value="processing">Đang Xử Lý</option>
+                            <option value="shipped">Đang Giao</option>
+                            <option value="delivered">Đã Giao</option>
+                            <option value="completed">Hoàn Tất</option>
+                            <option value="cancelled">Đã Hủy</option>
+                            <option value="returned">Hoàn Trả</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <label>Phương Thức Thanh Toán</label>
+                        <p id="paymentMethod">-</p>
+                    </div>
+                    <div class="detail-item">
+                        <label>Trạng Thái Thanh Toán</label>
+                        <p id="paymentStatus">-</p>
                     </div>
                 </div>
 
@@ -174,19 +252,81 @@
             </div>
 
             <div class="modal-footer">
+                <div id="orderModalStatusMessage" class="modal-status-message"></div>
+                <button id="saveOrderStatusBtn" class="btn-save-status" onclick="updateOrderStatus()">Lưu trạng thái</button>
                 <button class="btn-close" onclick="closeOrderModal()">Đóng</button>
             </div>
         </div>
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api/v1';
+        const API_BASE_URL = 'http://127.0.0.1:5000/api/v1';
         let allOrders = [];
+        let activeOrderId = null;
+
+        const ORDER_STATUS_MAP = {
+            pending: 'Chờ Xác Nhận',
+            confirmed: 'Đã Xác Nhận',
+            processing: 'Đang Xử Lý',
+            shipped: 'Đang Giao',
+            shipping: 'Đang Giao',
+            delivered: 'Đã Giao',
+            completed: 'Hoàn Tất',
+            cancelled: 'Đã Hủy',
+            returned: 'Hoàn Trả'
+        };
+
+        const ORDER_STATUS_BADGE_MAP = {
+            pending: 'badge-info',
+            confirmed: 'badge-info',
+            processing: 'badge-warning',
+            shipped: 'badge-warning',
+            shipping: 'badge-warning',
+            delivered: 'badge-success',
+            completed: 'badge-success',
+            cancelled: 'badge-danger',
+            returned: 'badge-danger'
+        };
+
+        const PAYMENT_STATUS_MAP = {
+            pending: 'Chờ thanh toán',
+            completed: 'Đã thanh toán',
+            failed: 'Thanh toán thất bại',
+            cancelled: 'Đã hủy thanh toán'
+        };
+
+        function getAuthToken() {
+            return localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+        }
+
+        function normalizeOrderStatus(status) {
+            return status === 'shipping' ? 'shipped' : status;
+        }
+
+        function getOrderStatusText(status) {
+            return ORDER_STATUS_MAP[normalizeOrderStatus(status)] || status || 'Chưa xác định';
+        }
+
+        function getPaymentStatusText(status) {
+            return PAYMENT_STATUS_MAP[status] || status || 'Chưa xác định';
+        }
+
+        function setModalStatusMessage(message = '', type = '') {
+            const element = document.getElementById('orderModalStatusMessage');
+            if (!message) {
+                element.className = 'modal-status-message';
+                element.textContent = '';
+                return;
+            }
+
+            element.className = `modal-status-message ${type}`;
+            element.textContent = message;
+        }
 
         // Load orders from API (for admin - all orders)
         async function loadOrders() {
             try {
-                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+                const token = getAuthToken();
                 const response = await fetch(`${API_BASE_URL}/orders/admin/all`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -219,36 +359,24 @@
             }
             
             tbody.innerHTML = orders.map(order => {
-                const statusMap = {
-                    'pending': 'Chờ Xác Nhận',
-                    'processing': 'Đang Xử Lý',
-                    'shipped': 'Đã Gửi',
-                    'delivered': 'Đã Giao',
-                    'cancelled': 'Đã Hủy'
-                };
-                
-                const statusBadgeMap = {
-                    'pending': 'badge-info',
-                    'processing': 'badge-warning',
-                    'shipped': 'badge-warning',
-                    'delivered': 'badge-success',
-                    'cancelled': 'badge-danger'
-                };
-                
-                const statusText = statusMap[order.orderStatus] || order.orderStatus;
-                const badgeClass = statusBadgeMap[order.orderStatus] || 'badge-info';
+                const normalizedStatus = normalizeOrderStatus(order.orderStatus);
+                const statusText = getOrderStatusText(normalizedStatus);
+                const badgeClass = ORDER_STATUS_BADGE_MAP[normalizedStatus] || 'badge-info';
+                const displayCode = order.orderCode || order._id?.slice(-6).toUpperCase() || 'N/A';
                 
                 return `
                     <tr>
-                        <td><strong>${order._id?.slice(-6).toUpperCase() || 'N/A'}</strong></td>
+                        <td><strong>${displayCode}</strong></td>
                         <td>${order.user?.fullName || 'N/A'}</td>
                         <td>${order.user?.phone || 'N/A'}</td>
                         <td>${(order.totalAmount || 0).toLocaleString('vi-VN')}₫</td>
                         <td><span class="status-badge ${badgeClass}">${statusText}</span></td>
                         <td>${new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
                         <td>
-                            <button class="btn btn-sm btn-info" onclick="viewOrder('${order._id}')">Xem</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteOrder('${order._id}')">Xóa</button>
+                            <div class="action-group">
+                                <button class="btn btn-sm btn-info" onclick="viewOrder('${order._id}')">Xem</button>
+                                <button class="btn btn-sm btn-neutral" onclick="openStatusEditor('${order._id}')">Đổi trạng thái</button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -258,7 +386,7 @@
         // View order detail
         async function viewOrder(id) {
             try {
-                const token = localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+                const token = getAuthToken();
                 const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -269,21 +397,17 @@
                 
                 if (data.success && data.data) {
                     const order = data.data;
+                    activeOrderId = order._id;
+                    setModalStatusMessage();
                     
                     // Populate modal
-                    document.getElementById('orderId').textContent = order._id?.slice(-6).toUpperCase();
+                    document.getElementById('orderId').textContent = order.orderCode || order._id?.slice(-6).toUpperCase();
                     document.getElementById('customerName').textContent = order.user?.fullName || '-';
                     document.getElementById('customerEmail').textContent = order.user?.email || '-';
                     document.getElementById('customerPhone').textContent = order.user?.phone || '-';
-                    
-                    const statusMap = {
-                        'pending': 'Chờ Xác Nhận',
-                        'processing': 'Đang Xử Lý',
-                        'shipped': 'Đã Gửi',
-                        'delivered': 'Đã Giao',
-                        'cancelled': 'Đã Hủy'
-                    };
-                    document.getElementById('orderStatus').textContent = statusMap[order.orderStatus] || order.orderStatus;
+                    document.getElementById('orderStatusSelect').value = normalizeOrderStatus(order.orderStatus || 'pending');
+                    document.getElementById('paymentMethod').textContent = String(order.paymentMethod || '-').toUpperCase();
+                    document.getElementById('paymentStatus').textContent = getPaymentStatusText(order.paymentStatus);
                     document.getElementById('shippingAddress').textContent = order.shippingAddress || '-';
                     document.getElementById('orderNote').textContent = order.notes || 'Không có ghi chú';
                     
@@ -313,15 +437,55 @@
             }
         }
 
-        function closeOrderModal() {
-            document.getElementById('orderModal').classList.remove('active');
+        async function openStatusEditor(id) {
+            await viewOrder(id);
         }
 
-        function deleteOrder(id) {
-            if (confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
-                alert(`Đã xóa đơn hàng #${id}`);
-                loadOrders();
+        async function updateOrderStatus() {
+            if (!activeOrderId) {
+                setModalStatusMessage('Không xác định được đơn hàng cần cập nhật.', 'error');
+                return;
             }
+
+            const token = getAuthToken();
+            const nextStatus = document.getElementById('orderStatusSelect').value;
+            const saveButton = document.getElementById('saveOrderStatusBtn');
+
+            try {
+                saveButton.disabled = true;
+                saveButton.textContent = 'Đang lưu...';
+                setModalStatusMessage();
+
+                const response = await fetch(`${API_BASE_URL}/orders/${activeOrderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ orderStatus: nextStatus })
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Không thể cập nhật trạng thái đơn hàng.');
+                }
+
+                await loadOrders();
+                await viewOrder(activeOrderId);
+                setModalStatusMessage('Đã cập nhật trạng thái đơn hàng thành công.', 'success');
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                setModalStatusMessage(error.message || 'Lỗi khi cập nhật trạng thái đơn hàng.', 'error');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Lưu trạng thái';
+            }
+        }
+
+        function closeOrderModal() {
+            activeOrderId = null;
+            setModalStatusMessage();
+            document.getElementById('orderModal').classList.remove('active');
         }
 
         function filterOrders() {
@@ -331,9 +495,10 @@
             const toDate = document.getElementById('toDate').value;
             
             const filtered = allOrders.filter(order => {
-                const matchSearch = !search || order._id.includes(search) || 
+                const orderCode = String(order.orderCode || order._id || '').toLowerCase();
+                const matchSearch = !search || orderCode.includes(search) || 
                                   (order.user?.fullName || '').toLowerCase().includes(search);
-                const matchStatus = !status || order.orderStatus === status;
+                const matchStatus = !status || normalizeOrderStatus(order.orderStatus) === status;
                 const orderDate = new Date(order.createdAt);
                 const matchFromDate = !fromDate || orderDate >= new Date(fromDate);
                 const matchToDate = !toDate || orderDate <= new Date(toDate);
