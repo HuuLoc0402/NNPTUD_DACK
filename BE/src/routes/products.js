@@ -94,11 +94,16 @@ const toBoolean = (value, fallback = false) => {
 
 const normalizeLegacyColors = (value) => {
   if (Array.isArray(value)) {
-    return value.map((item) => normalizeColorName(item)).filter(Boolean);
+    return value
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .map((item) => normalizeColorName(item));
   }
 
   return String(value || '')
     .split(',')
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
     .map((item) => normalizeColorName(item))
     .filter(Boolean);
 };
@@ -189,15 +194,20 @@ const normalizeVariantsInput = (rawVariants = []) => {
   }
 
   return rawVariants
-    .map((variant) => ({
-      size: String(variant?.size || '').trim(),
-      color: normalizeColorName(variant?.color),
-      colorCode: normalizeColorCode(variant?.colorCode, variant?.color),
-      price: toNumber(variant?.price, 0),
-      stock: Math.max(0, toNumber(variant?.stock, 0)),
-      sku: String(variant?.sku || '').trim() || null
-    }))
-    .filter((variant) => variant.size && PRODUCT_SIZE_ENUM.includes(variant.size));
+    .map((variant) => {
+      const size = String(variant?.size || '').trim();
+      const rawColor = String(variant?.color || '').trim();
+
+      return {
+        size,
+        color: rawColor ? normalizeColorName(rawColor) : '',
+        colorCode: rawColor ? normalizeColorCode(variant?.colorCode, rawColor) : '',
+        price: toNumber(variant?.price, 0),
+        stock: Math.max(0, toNumber(variant?.stock, 0)),
+        sku: String(variant?.sku || '').trim() || null
+      };
+    })
+    .filter((variant) => variant.size && variant.color && PRODUCT_SIZE_ENUM.includes(variant.size));
 };
 
 const ensureUniqueVariantKeys = (variants) => {
@@ -337,10 +347,11 @@ router.get('/top-rated', async (req, res, next) => {
 
 router.get('/', async (req, res, next) => {
   try {
+    const adminView = getViewerRole(req) === 'admin';
     const page = Number(req.query.page || 1);
     const limit = Number(req.query.limit || 100);
     const skip = (page - 1) * limit;
-    const filter = {};
+    const filter = adminView ? {} : { isActive: true };
 
     if (req.query.category) {
       filter.category = req.query.category;
@@ -372,7 +383,6 @@ router.get('/', async (req, res, next) => {
       .limit(limit)
       .populate('category', 'name slug');
 
-    const adminView = getViewerRole(req) === 'admin';
     return res.status(200).json({
       success: true,
       data: products.map((item) => productController.formatProduct(item, !adminView))

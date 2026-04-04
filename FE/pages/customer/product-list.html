@@ -155,7 +155,7 @@
         }
 
         function getNormalizedColor(value) {
-            return normalizeText(value || 'Mặc định');
+            return normalizeText(value || '');
         }
 
         function getProductImage(product) {
@@ -167,28 +167,53 @@
         }
 
         function getProductColorDetails(product) {
-            const rawOptions = [
-                ...(Array.isArray(product?.colorOptions) ? product.colorOptions.map((item) => ({ name: item?.name, code: item?.code })) : []),
-                ...(Array.isArray(product?.colors) ? product.colors.map((item) => ({ name: item, code: '#D9D9D9' })) : []),
-                ...(Array.isArray(product?.variants) ? product.variants.map((item) => ({ name: item?.color, code: item?.colorCode || '#D9D9D9' })) : [])
-            ].filter((item) => item?.name);
+            const getUniqueColors = (rawOptions) => {
+                const unique = [];
 
-            const unique = [];
-            rawOptions.forEach((item) => {
-                const normalized = getNormalizedColor(item.name);
-                if (!unique.some((entry) => getNormalizedColor(entry.name) === normalized)) {
-                    unique.push({
-                        name: item.name,
-                        code: item.code || '#D9D9D9'
-                    });
-                }
-            });
+                rawOptions.filter((item) => String(item?.name || '').trim()).forEach((item) => {
+                    const normalized = getNormalizedColor(item.name);
+                    if (!normalized) {
+                        return;
+                    }
 
-            return unique.length ? unique : [{ name: 'Mặc định', code: '#D9D9D9' }];
+                    if (!unique.some((entry) => getNormalizedColor(entry.name) === normalized)) {
+                        unique.push({
+                            name: item.name,
+                            code: item.code || '#D9D9D9'
+                        });
+                    }
+                });
+
+                return unique;
+            };
+
+            const explicitColors = getUniqueColors(
+                Array.isArray(product?.colorOptions)
+                    ? product.colorOptions.map((item) => ({ name: item?.name, code: item?.code }))
+                    : []
+            );
+            if (explicitColors.length) {
+                return explicitColors;
+            }
+
+            const variantColors = getUniqueColors(
+                Array.isArray(product?.variants)
+                    ? product.variants.map((item) => ({ name: item?.color, code: item?.colorCode || '#D9D9D9' }))
+                    : []
+            );
+            if (variantColors.length) {
+                return variantColors;
+            }
+
+            return getUniqueColors(
+                Array.isArray(product?.colors)
+                    ? product.colors.map((item) => ({ name: item, code: '#D9D9D9' }))
+                    : []
+            );
         }
 
         function getComparablePrice(product) {
-            return Number(product.minCurrentPrice || product.currentPrice || product.price || getDefaultVariant(product).finalPrice || 0);
+            return Number(product.minCurrentPrice || product.currentPrice || product.price || getDefaultVariant(product)?.finalPrice || 0);
         }
 
         function getComparablePopularity(product) {
@@ -204,24 +229,21 @@
                 return product.variants[0];
             }
 
-            return {
-                size: Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M',
-                color: Array.isArray(product?.colors) && product.colors.length ? product.colors[0] : 'Mặc định',
-                finalPrice: Number(product?.currentPrice || product?.price || 0)
-            };
+            return null;
         }
 
         function buildWishlistPayload(product) {
             const defaultVariant = getDefaultVariant(product);
+            const firstColor = getProductColorDetails(product)[0]?.name || '';
             return {
                 productId: product._id,
                 slug: product.slug || product._id,
                 name: product.name,
                 image: getProductImage(product),
-                price: Number(defaultVariant.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
+                price: Number(defaultVariant?.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
                 originalPrice: Number(product.minPrice || product.price || product.currentPrice || 0),
-                size: defaultVariant.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
-                color: defaultVariant.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
+                size: defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : ''),
+                color: defaultVariant?.color || firstColor
             };
         }
 
@@ -256,50 +278,46 @@
             });
         }
 
-        /**
-         * Load all categories from API
-         */
         async function loadCategories() {
+            const categoriesFilter = document.getElementById('categoriesFilter');
+            if (!categoriesFilter) {
+                return;
+            }
+
             try {
-                const apiBase = window.CONFIG?.API_BASE_URL || 'http://localhost:5000/api/v1';
-                const response = await fetch(apiBase + '/categories');
-                const data = await response.json();
-                
-                const categoriesFilter = document.getElementById('categoriesFilter');
-                if (!categoriesFilter) return;
-                
+                const response = await window.CategoryAPI.getCategories();
+                categories = Array.isArray(response?.data) ? response.data : [];
                 categoriesFilter.innerHTML = '';
-                categories = Array.isArray(data.data) ? data.data : [];
-                
-                if (categories.length > 0) {
-                    categories.forEach(category => {
-                        const label = document.createElement('label');
-                        label.innerHTML = `<input type="checkbox" name="category" value="${category._id}" data-slug="${category.slug || ''}"> ${category.name}`;
-                        categoriesFilter.appendChild(label);
-                    });
-                } else {
+
+                if (!categories.length) {
                     categoriesFilter.innerHTML = '<p style="color: #999;">Không có danh mục</p>';
+                    return;
                 }
+
+                categories.forEach((category) => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="checkbox" name="category" value="${category._id}" data-slug="${category.slug || ''}"> ${category.name}`;
+                    categoriesFilter.appendChild(label);
+                });
             } catch (error) {
                 console.error('Error loading categories:', error);
-                const categoriesFilter = document.getElementById('categoriesFilter');
-                if (categoriesFilter) {
-                    categoriesFilter.innerHTML = '<p style="color: #999;">Lỗi tải danh mục</p>';
-                }
+                categories = [];
+                categoriesFilter.innerHTML = '<p style="color: #999;">Lỗi tải danh mục</p>';
             }
         }
 
         async function loadProducts() {
             try {
-                const apiBase = window.CONFIG?.API_BASE_URL || 'http://localhost:5000/api/v1';
-                const response = await fetch(apiBase + '/products?page=1&limit=100');
-                const data = await response.json();
-                products = data.data || [];
+                const response = await window.ProductAPI.getProducts({ page: 1, limit: 100 });
+                products = Array.isArray(response?.data) ? response.data : [];
                 buildColorFilters();
                 renderProducts();
             } catch (error) {
                 console.error('Error loading products:', error);
+                products = [];
+                document.getElementById('productsList').innerHTML = '';
                 document.getElementById('emptyMessage').style.display = 'block';
+                document.getElementById('resultsCount').textContent = 'Không thể tải sản phẩm';
             }
         }
 
@@ -313,6 +331,10 @@
             products.forEach((product) => {
                 getProductColorDetails(product).forEach((color) => {
                     const normalized = getNormalizedColor(color.name);
+                    if (!normalized) {
+                        return;
+                    }
+
                     if (!discoveredColors.some((item) => getNormalizedColor(item.name) === normalized)) {
                         discoveredColors.push(color);
                     }
@@ -423,8 +445,8 @@
 
             pageProducts.forEach(product => {
                 const defaultVariant = getDefaultVariant(product);
-                const currentPrice = Number(product.minCurrentPrice || defaultVariant.finalPrice || product.currentPrice || product.price || 0);
-                const originalPrice = Number(product.minPrice || defaultVariant.price || product.price || currentPrice);
+                const currentPrice = Number(product.minCurrentPrice || defaultVariant?.finalPrice || product.currentPrice || product.price || 0);
+                const originalPrice = Number(product.minPrice || defaultVariant?.price || product.price || currentPrice);
                 const imageUrl = getProductImage(product);
                 const productIdentifier = product.slug || product._id;
                 const categoryName = resolveCategoryName(product);
@@ -599,10 +621,10 @@
                 productId: product._id,
                 slug: product.slug,
                 name: product.name,
-                price: Number(getDefaultVariant(product).finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
+                price: Number(getDefaultVariant(product)?.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
                 image: getProductImage(product),
-                size: getDefaultVariant(product).size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
-                color: getDefaultVariant(product).color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
+                size: getDefaultVariant(product)?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : ''),
+                color: getDefaultVariant(product)?.color || (getProductColorDetails(product)[0]?.name || '')
             });
         }
 

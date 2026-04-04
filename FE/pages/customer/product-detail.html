@@ -238,7 +238,27 @@
         }
 
         function normalizeColorName(value) {
-            return String(value || '').trim() || 'Mặc định';
+            return String(value || '').trim();
+        }
+
+        function getUniqueColorOptions(rawOptions = []) {
+            const unique = [];
+
+            rawOptions.filter((item) => String(item?.name || '').trim()).forEach((item) => {
+                const normalizedName = normalizeColorName(item.name);
+                if (!normalizedName) {
+                    return;
+                }
+
+                if (!unique.some((entry) => normalizeColorName(entry.name) === normalizedName)) {
+                    unique.push({
+                        name: normalizedName,
+                        code: item.code || '#D9D9D9'
+                    });
+                }
+            });
+
+            return unique;
         }
 
         function getProductImages(product) {
@@ -269,17 +289,29 @@
         }
 
         function getColorOptions(product) {
-            if (Array.isArray(product?.colorOptions) && product.colorOptions.length) {
-                return product.colorOptions.map((item) => ({
-                    name: normalizeColorName(item.name),
-                    code: item.code || '#D9D9D9'
-                }));
+            const explicitColorOptions = getUniqueColorOptions(
+                Array.isArray(product?.colorOptions)
+                    ? product.colorOptions.map((item) => ({ name: item?.name, code: item?.code }))
+                    : []
+            );
+            if (explicitColorOptions.length) {
+                return explicitColorOptions;
             }
 
-            const fallbackColors = Array.isArray(product?.colors) && product.colors.length
-                ? product.colors
-                : ['Mặc định'];
-            return fallbackColors.map((item) => ({ name: normalizeColorName(item), code: '#D9D9D9' }));
+            const variantColorOptions = getUniqueColorOptions(
+                Array.isArray(product?.variants)
+                    ? product.variants.map((item) => ({ name: item?.color, code: item?.colorCode || '#D9D9D9' }))
+                    : []
+            );
+            if (variantColorOptions.length) {
+                return variantColorOptions;
+            }
+
+            return getUniqueColorOptions(
+                Array.isArray(product?.colors)
+                    ? product.colors.map((item) => ({ name: item, code: '#D9D9D9' }))
+                    : []
+            );
         }
 
         function getProductVariants(product) {
@@ -291,24 +323,20 @@
                 }));
             }
 
-            return [{
-                color: getColorOptions(product)[0]?.name || 'Mặc định',
-                colorCode: getColorOptions(product)[0]?.code || '#D9D9D9',
-                size: Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M',
-                price: Number(product?.minPrice || product?.price || 0),
-                stock: Number(product?.stock || 0),
-                finalPrice: Number(product?.currentPrice || product?.price || 0),
-                sku: product?.sku || null
-            }];
+            return [];
         }
 
         function getMatchingVariant(product, color, size) {
             const variants = getProductVariants(product);
+            if (!variants.length) {
+                return null;
+            }
+
             const normalizedColor = normalizeColorName(color);
 
-            return variants.find((variant) => variant.size === size && normalizeColorName(variant.color) === normalizedColor)
-                || variants.find((variant) => normalizeColorName(variant.color) === normalizedColor)
-                || variants.find((variant) => variant.size === size)
+            return variants.find((variant) => variant.size === size && normalizedColor && normalizeColorName(variant.color) === normalizedColor)
+                || (normalizedColor ? variants.find((variant) => normalizeColorName(variant.color) === normalizedColor) : null)
+                || (size ? variants.find((variant) => variant.size === size) : null)
                 || variants[0]
                 || null;
         }
@@ -322,8 +350,8 @@
                 image: getImagesForColor(currentProduct, selectedColor)[0] || getProductImages(currentProduct)[0],
                 price: Number(variant?.finalPrice ?? currentProduct?.currentPrice ?? currentProduct?.price ?? 0),
                 originalPrice: Number(variant?.price ?? currentProduct?.minPrice ?? currentProduct?.price ?? 0),
-                size: selectedSize,
-                color: selectedColor
+                size: selectedSize || '',
+                color: selectedColor || ''
             };
         }
 
@@ -336,8 +364,8 @@
                 image: getImagesForColor(product, variant?.color || product?.defaultVariant?.color || product?.colors?.[0])[0] || getProductImages(product)[0],
                 price: Number(variant?.finalPrice ?? product?.minCurrentPrice ?? product?.currentPrice ?? product?.price ?? 0),
                 originalPrice: Number(variant?.price ?? product?.minPrice ?? product?.price ?? 0),
-                size: variant?.size || (Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
-                color: variant?.color || (Array.isArray(product?.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
+                size: variant?.size || product?.defaultVariant?.size || (Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : ''),
+                color: variant?.color || product?.defaultVariant?.color || getColorOptions(product)[0]?.name || ''
             };
         }
 
@@ -353,11 +381,11 @@
         function getAvailableSizesForColor(product, color) {
             const normalizedColor = normalizeColorName(color);
             const sizes = getProductVariants(product)
-                .filter((variant) => normalizeColorName(variant.color) === normalizedColor)
+                .filter((variant) => !normalizedColor || normalizeColorName(variant.color) === normalizedColor)
                 .map((variant) => variant.size)
                 .filter(Boolean);
 
-            return sizes.length ? sizes : (product.sizes || ['M']);
+            return sizes.length ? sizes : (Array.isArray(product?.sizes) ? product.sizes.filter(Boolean) : []);
         }
 
         function getImagesForColor(product, color) {
@@ -367,6 +395,10 @@
             }
 
             const normalizedColor = normalizeColorName(color);
+            if (!normalizedColor) {
+                return images.map((item) => getImageUrl(item.url)).filter(Boolean);
+            }
+
             const matching = images.filter((item) => normalizeColorName(item.color) === normalizedColor);
             const shared = images.filter((item) => !item.color);
             const displayImages = matching.length ? [...matching, ...shared] : images;
@@ -452,8 +484,15 @@
             const label = document.getElementById('selectedColorLabel');
             const colorOptions = getColorOptions(product);
 
-            if (!selectedColor) {
-                selectedColor = colorOptions[0]?.name || 'Mặc định';
+            if (!colorOptions.length) {
+                selectedColor = '';
+                label.textContent = '';
+                container.innerHTML = '';
+                return;
+            }
+
+            if (!selectedColor || !colorOptions.some((option) => normalizeColorName(option.name) === normalizeColorName(selectedColor))) {
+                selectedColor = colorOptions[0]?.name || '';
             }
 
             label.textContent = selectedColor;
@@ -469,7 +508,7 @@
                     selectedColor = this.dataset.color;
                     const availableSizes = getAvailableSizesForColor(product, selectedColor);
                     if (!availableSizes.includes(selectedSize)) {
-                        selectedSize = availableSizes[0] || 'M';
+                        selectedSize = availableSizes[0] || '';
                     }
                     syncSelectedVariant(product);
                 });
@@ -481,8 +520,14 @@
             const availableSizes = getAvailableSizesForColor(product, selectedColor);
             const allSizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : availableSizes;
 
+            if (!allSizes.length) {
+                selectedSize = '';
+                container.innerHTML = '';
+                return;
+            }
+
             if (!availableSizes.includes(selectedSize)) {
-                selectedSize = availableSizes[0] || allSizes[0] || 'M';
+                selectedSize = availableSizes[0] || allSizes[0] || '';
             }
 
             container.innerHTML = allSizes.map((value) => {
@@ -545,7 +590,7 @@
             }
 
             selectedColor = normalizeColorName(variant.color || selectedColor);
-            selectedSize = variant.size || selectedSize || 'M';
+            selectedSize = variant.size || selectedSize || '';
 
             renderColorOptions(product);
             renderSizeOptions(product);
@@ -588,8 +633,8 @@
             const highlights = [
                 `Danh mục: ${product.categoryName || 'Đang cập nhật'}`,
                 `Giá hiện tại: ${formatCurrency(product.minCurrentPrice || product.currentPrice || product.price || 0)}`,
-                `Kích cỡ có sẵn: ${(product.sizes || []).join(', ') || 'M'}`,
-                `Màu sắc: ${(product.colors || []).join(', ') || 'Mặc định'}`,
+                `Kích cỡ có sẵn: ${(product.sizes || []).join(', ') || 'Chưa cập nhật'}`,
+                `Màu sắc: ${getColorOptions(product).map((item) => item.name).join(', ') || 'Chưa cập nhật'}`,
                 `Số lượng tồn: ${product.stock || 0}`
             ];
 
@@ -798,8 +843,8 @@
                 document.getElementById('soldCount').textContent = `${product.views || 0} lượt xem`;
                 document.querySelector('.rating-section .stars').innerHTML = renderStars(product.rating || product.ratingAverage || 0);
 
-                selectedColor = product.defaultVariant?.color || getColorOptions(product)[0]?.name || 'Mặc định';
-                selectedSize = product.defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M');
+                selectedColor = product.defaultVariant?.color || getColorOptions(product)[0]?.name || '';
+                selectedSize = product.defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : '');
                 syncSelectedVariant(product);
                 renderDescription({ ...product, categoryName });
                 await Promise.all([

@@ -42,6 +42,14 @@ const normalizeColorName = (value) => {
   return normalized || 'Mac dinh';
 };
 
+const extractProvidedColorName = (item) => {
+  const rawValue = typeof item === 'string'
+    ? item
+    : item?.name ?? item?.color;
+  const normalized = String(rawValue || '').trim();
+  return normalized || null;
+};
+
 const normalizeColorCode = (value, colorName = '') => {
   const code = String(value || '').trim();
   if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(code)) {
@@ -55,7 +63,12 @@ const dedupeColorOptions = (items = []) => {
   const seen = new Map();
 
   items.forEach((item) => {
-    const name = normalizeColorName(item?.name || item?.color || item);
+    const rawName = extractProvidedColorName(item);
+    if (!rawName) {
+      return;
+    }
+
+    const name = normalizeColorName(rawName);
     const key = toSearchToken(name);
     if (!key) {
       return;
@@ -128,19 +141,34 @@ const normalizeProductImages = (product) => {
 };
 
 const getProductColorOptions = (product) => {
-  const imageOptions = normalizeProductImages(product)
-    .filter((item) => item.color)
-    .map((item) => ({ name: item.color }));
   const variantOptions = Array.isArray(product?.variants)
-    ? product.variants.map((item) => ({ name: item.color, code: item.colorCode }))
+    ? product.variants
+      .filter((item) => extractProvidedColorName(item?.color))
+      .map((item) => ({ name: item.color, code: item.colorCode }))
     : [];
-  const productOptions = Array.isArray(product?.colorOptions)
-    ? product.colorOptions
-    : Array.isArray(product?.color)
-      ? product.color.map((item) => ({ name: item }))
-      : [];
+  const imageOptions = normalizeProductImages(product)
+    .filter((item) => extractProvidedColorName(item?.color))
+    .map((item) => ({ name: item.color }));
 
-  return dedupeColorOptions([...productOptions, ...variantOptions, ...imageOptions]);
+  if (variantOptions.length || imageOptions.length) {
+    return dedupeColorOptions([...variantOptions, ...imageOptions]);
+  }
+
+  const productOptions = Array.isArray(product?.colorOptions)
+    ? product.colorOptions.filter((item) => extractProvidedColorName(item))
+    : [];
+
+  if (productOptions.length) {
+    return dedupeColorOptions(productOptions);
+  }
+
+  const legacyProductOptions = Array.isArray(product?.color)
+    ? product.color
+      .filter((item) => extractProvidedColorName(item))
+      .map((item) => ({ name: item }))
+    : [];
+
+  return dedupeColorOptions(legacyProductOptions);
 };
 
 const findMatchingVariant = (product, selection = {}) => {

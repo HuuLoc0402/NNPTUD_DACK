@@ -208,11 +208,7 @@
                 return product.variants[0];
             }
 
-            return {
-                size: Array.isArray(product?.sizes) && product.sizes.length ? product.sizes[0] : 'M',
-                color: Array.isArray(product?.colors) && product.colors.length ? product.colors[0] : 'Mặc định',
-                finalPrice: Number(product?.currentPrice || product?.price || 0)
-            };
+            return null;
         }
 
         function buildWishlistPayload(product) {
@@ -222,10 +218,10 @@
                 slug: product.slug || product._id,
                 name: product.name,
                 image: getProductImage(product),
-                price: Number(defaultVariant.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
+                price: Number(defaultVariant?.finalPrice || product.minCurrentPrice || product.currentPrice || product.price || 0),
                 originalPrice: Number(product.minPrice || product.price || product.currentPrice || 0),
-                size: defaultVariant.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M'),
-                color: defaultVariant.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mặc định')
+                size: defaultVariant?.size || (Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : ''),
+                color: defaultVariant?.color || (Array.isArray(product.colors) && product.colors.length ? product.colors[0] : '')
             };
         }
 
@@ -469,14 +465,22 @@
 
         function collectVariantEntries() {
             const rows = Array.from(getVariantRowsContainer().querySelectorAll('.variant-builder-row'));
-            const variants = rows.map((row) => ({
-                color: row.querySelector('.variant-color-name').value.trim(),
-                colorCode: row.querySelector('.variant-color-code').value,
-                size: row.querySelector('.variant-size').value,
-                price: Number(row.querySelector('.variant-price').value),
-                stock: Number(row.querySelector('.variant-stock').value),
-                sku: row.querySelector('.variant-sku').dataset.effectiveSku || ''
-            })).filter((variant) => variant.color || variant.size || Number.isFinite(variant.price) || Number.isFinite(variant.stock));
+            const variants = rows.map((row) => {
+                const color = row.querySelector('.variant-color-name').value.trim();
+                const size = row.querySelector('.variant-size').value;
+                const priceValue = row.querySelector('.variant-price').value.trim();
+                const stockValue = row.querySelector('.variant-stock').value.trim();
+
+                return {
+                    color,
+                    colorCode: row.querySelector('.variant-color-code').value,
+                    size,
+                    price: priceValue === '' ? Number.NaN : Number(priceValue),
+                    stock: stockValue === '' ? Number.NaN : Number(stockValue),
+                    sku: row.querySelector('.variant-sku').dataset.effectiveSku || '',
+                    isEmpty: !color && !size && priceValue === '' && stockValue === ''
+                };
+            }).filter((variant) => !variant.isEmpty).map(({ isEmpty, ...variant }) => variant);
 
             if (!variants.length) {
                 throw new Error('Vui lòng thêm ít nhất một dòng đồng sản phẩm');
@@ -701,9 +705,9 @@
             const variants = Array.isArray(product.variants) && product.variants.length
                 ? product.variants
                 : [{
-                    color: Array.isArray(product.colors) && product.colors.length ? product.colors[0] : 'Mac dinh',
+                    color: Array.isArray(product.colors) && product.colors.length ? product.colors[0] : '',
                     colorCode: '#D9D9D9',
-                    size: Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : 'M',
+                    size: Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : '',
                     price: product.minPrice || product.price || 0,
                     stock: getStockValue(product),
                     sku: product.sku || ''
