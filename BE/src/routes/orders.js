@@ -1,11 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
+const Payment = require('../models/Payment');
+const Comment = require('../models/Comment');
 const cartController = require('../controllers/cartController');
 const orderController = require('../controllers/orderController');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const { findMatchingVariant, getImagesForColor, normalizeColorName } = require('../utils/productVariant');
-const { validateOrderInventory, applyInventoryForOrder } = require('../utils/orderInventory');
+const { validateOrderInventory, applyInventoryForOrder, revertInventoryForOrder } = require('../utils/orderInventory');
 const { sendInvoiceEmailForCompletedOrder } = require('../utils/invoiceMailer');
 
 const router = express.Router();
@@ -45,6 +47,46 @@ const buildOrderItem = (product, item) => {
 
 const canAccessOrder = (order, req) => {
   return req.userRole === 'admin' || String(order.user?._id || order.user) === String(req.userId);
+};
+
+const isOrderVisible = (order) => {
+  return String(order?.paymentMethod || '').toLowerCase() === 'cod' || order?.paymentStatus === 'completed';
+};
+
+const buildVisibleOrdersFilter = (extraFilter = {}) => ({
+  ...extraFilter,
+  $or: [
+    { paymentMethod: 'cod' },
+    { paymentStatus: 'completed' }
+  ]
+});
+
+const recalculateProductCommentStats = async (productIds = []) => {
+  const uniqueProductIds = Array.from(new Set(productIds.map((productId) => String(productId || '')).filter(Boolean)));
+
+  await Promise.all(uniqueProductIds.map(async (productId) => {
+    const stats = await Comment.aggregate([
+      {
+        $match: {
+          product: new mongoose.Types.ObjectId(productId),
+          isApproved: true
+        }
+      },
+      {
+        $group: {
+          _id: '$product',
+          ratingAverage: { $avg: '$rating' },
+          commentCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const summary = stats[0] || { ratingAverage: 0, commentCount: 0 };
+    await Product.findByIdAndUpdate(productId, {
+      ratingAverage: Number(Number(summary.ratingAverage || 0).toFixed(1)),
+      commentCount: summary.commentCount || 0
+    });
+  }));
 };
 
 router.post('/', authenticate, async (req, res, next) => {
@@ -120,7 +162,7 @@ router.post('/', authenticate, async (req, res, next) => {
 
 router.get('/admin/all', authenticate, adminOnly, async (req, res, next) => {
   try {
-    const orders = await orderController.findOrders({});
+    const orders = await orderController.findOrders(buildVisibleOrdersFilter());
     return res.status(200).json({ success: true, data: orders.map(orderController.formatOrder) });
   } catch (error) {
     next(error);
@@ -129,7 +171,7 @@ router.get('/admin/all', authenticate, adminOnly, async (req, res, next) => {
 
 router.get('/', authenticate, async (req, res, next) => {
   try {
-    const orders = await orderController.findOrders({ user: req.userId });
+    const orders = await orderController.findOrders(buildVisibleOrdersFilter({ user: req.userId }));
     return res.status(200).json({ success: true, data: orders.map(orderController.formatOrder) });
   } catch (error) {
     next(error);
@@ -145,6 +187,10 @@ router.get('/:id', authenticate, async (req, res, next) => {
 
     if (!canAccessOrder(order, req)) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền xem đơn hàng này' });
+    }
+
+    if (req.userRole !== 'admin' && !isOrderVisible(order)) {
+      return res.status(404).json({ success: false, message: 'Đơn hàng chưa hoàn tất thanh toán.' });
     }
 
     return res.status(200).json({ success: true, data: orderController.formatOrder(order) });
@@ -222,6 +268,36 @@ router.put('/:id/status', authenticate, adminOnly, async (req, res, next) => {
     }
 
     return res.status(200).json({ success: true, data: orderController.formatOrder(order) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/:id', authenticate, adminOnly, async (req, res, next) => {
+  try {
+    const order = await orderController.findOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const relatedComments = await Comment.find({ order: order._id }).select('product').lean();
+
+    if (order.inventoryAdjustedAt) {
+      await revertInventoryForOrder(order);
+    }
+
+    await Promise.all([
+      Payment.deleteMany({ order: order._id }),
+      Comment.deleteMany({ order: order._id })
+    ]);
+
+    await recalculateProductCommentStats(relatedComments.map((comment) => comment.product));
+    await orderController.deleteOrder(req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Đã xóa đơn hàng thành công.'
+    });
   } catch (error) {
     next(error);
   }

@@ -146,8 +146,8 @@
         <section class="card">
             <div class="hero">
                 <div class="icon"><i class="fas fa-times"></i></div>
-                <h1>Thanh toán chưa thành công</h1>
-                <p class="subtitle">Giao dịch VNPay chưa hoàn tất. Giỏ hàng của bạn vẫn được giữ nguyên để bạn có thể thử lại.</p>
+                <h1 id="failedTitle">Thanh toán chưa thành công</h1>
+                <p id="failedSubtitle" class="subtitle">Giao dịch chưa hoàn tất. Giỏ hàng của bạn vẫn được giữ nguyên để bạn có thể thử lại.</p>
             </div>
 
             <div class="body">
@@ -160,9 +160,9 @@
                 </div>
 
                 <div class="actions">
-                    <a href="checkout.html" class="btn-primary">Thử thanh toán lại</a>
+                    <a id="retryAction" href="checkout.html" class="btn-primary">Thử thanh toán lại</a>
                     <a href="cart.html" class="btn-secondary">Quay về giỏ hàng</a>
-                    <a href="order-history.html" class="btn-secondary">Xem đơn hàng</a>
+                    <a id="orderHistoryAction" href="order-history.html" class="btn-secondary">Xem đơn hàng</a>
                 </div>
             </div>
         </section>
@@ -195,8 +195,15 @@
             updateHeaderAuth();
 
             const orderId = getParam('orderId');
-            const paymentMethod = getParam('paymentMethod') || 'vnpay';
+            const paymentMethod = String(getParam('paymentMethod') || 'vnpay').toLowerCase();
             const message = getParam('message') || 'Đã xảy ra lỗi trong quá trình thanh toán.';
+
+            document.getElementById('failedTitle').textContent = paymentMethod === 'cod' ? 'Đặt hàng chưa thành công' : 'Thanh toán chưa thành công';
+            document.getElementById('failedSubtitle').textContent = paymentMethod === 'cod'
+                ? 'Đơn hàng chưa được tạo thành công. Vui lòng kiểm tra lại thông tin và thử lại.'
+                : 'Giao dịch chưa hoàn tất. Đơn hàng sẽ chưa được hiển thị cho tới khi thanh toán thành công.';
+            document.getElementById('retryAction').textContent = paymentMethod === 'cod' ? 'Thử đặt hàng lại' : 'Thử thanh toán lại';
+            document.getElementById('orderHistoryAction').style.display = 'none';
 
             document.getElementById('failureMessage').textContent = message;
             document.getElementById('failureMeta').innerHTML = `

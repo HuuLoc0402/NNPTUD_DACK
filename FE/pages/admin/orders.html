@@ -43,6 +43,8 @@
         .btn-info:hover { background: #bee5eb; }
         .btn-neutral { background: #f1f1f1; color: #2C3E50; }
         .btn-neutral:hover { background: #e5e5e5; }
+        .btn-danger { background: #f8d7da; color: #721c24; }
+        .btn-danger:hover { background: #f1bfc5; }
         .btn-save-status {
             background: #2C3E50;
             color: #FFFFFF;
@@ -85,8 +87,6 @@
         @media (max-width: 768px) {
             .detail-row { grid-template-columns: 1fr; }
         }
-    </style>
-        
     </style>
 </head>
 <body>
@@ -253,6 +253,7 @@
 
             <div class="modal-footer">
                 <div id="orderModalStatusMessage" class="modal-status-message"></div>
+                <button id="deleteOrderBtn" class="btn btn-danger" onclick="deleteOrder()">Xóa đơn</button>
                 <button id="saveOrderStatusBtn" class="btn-save-status" onclick="updateOrderStatus()">Lưu trạng thái</button>
                 <button class="btn-close" onclick="closeOrderModal()">Đóng</button>
             </div>
@@ -376,6 +377,7 @@
                             <div class="action-group">
                                 <button class="btn btn-sm btn-info" onclick="viewOrder('${order._id}')">Xem</button>
                                 <button class="btn btn-sm btn-neutral" onclick="openStatusEditor('${order._id}')">Đổi trạng thái</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteOrder('${order._id}')">Xóa</button>
                             </div>
                         </td>
                     </tr>
@@ -479,6 +481,66 @@
             } finally {
                 saveButton.disabled = false;
                 saveButton.textContent = 'Lưu trạng thái';
+            }
+        }
+
+        async function deleteOrder(id = activeOrderId) {
+            if (!id) {
+                setModalStatusMessage('Không xác định được đơn hàng cần xóa.', 'error');
+                return;
+            }
+
+            const order = allOrders.find(item => item._id === id);
+            const displayCode = order?.orderCode || order?._id?.slice(-6).toUpperCase() || 'N/A';
+            const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn đơn hàng ${displayCode}? Thao tác này không thể hoàn tác.`);
+
+            if (!confirmed) {
+                return;
+            }
+
+            const token = getAuthToken();
+            const deleteButton = document.getElementById('deleteOrderBtn');
+            const isModalDelete = activeOrderId === id && deleteButton;
+            const originalText = deleteButton ? deleteButton.textContent : '';
+
+            try {
+                if (isModalDelete) {
+                    deleteButton.disabled = true;
+                    deleteButton.textContent = 'Đang xóa...';
+                    setModalStatusMessage();
+                }
+
+                const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Không thể xóa đơn hàng.');
+                }
+
+                await loadOrders();
+
+                if (activeOrderId === id) {
+                    closeOrderModal();
+                }
+
+                alert(data.message || 'Đã xóa đơn hàng thành công.');
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                if (activeOrderId === id) {
+                    setModalStatusMessage(error.message || 'Lỗi khi xóa đơn hàng.', 'error');
+                } else {
+                    alert(error.message || 'Lỗi khi xóa đơn hàng.');
+                }
+            } finally {
+                if (deleteButton) {
+                    deleteButton.disabled = false;
+                    deleteButton.textContent = originalText || 'Xóa đơn';
+                }
             }
         }
 

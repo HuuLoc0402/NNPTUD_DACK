@@ -4,7 +4,7 @@ const axios = require('axios');
 class PaymentGateway {
   // ============= VNPAY =============
   static getVNPayRequestHashMode() {
-    const mode = String(process.env.VNPAY_HASH_MODE || 'raw').trim().toLowerCase();
+    const mode = String(process.env.VNPAY_HASH_MODE || 'encoded').trim().toLowerCase();
     return mode === 'raw' ? 'raw' : 'encoded';
   }
 
@@ -45,7 +45,7 @@ class PaymentGateway {
   static buildVNPayHashData(params = {}, mode = 'encoded') {
     const normalizedParams = this.normalizeVNPayParams(params);
 
-    return Object.keys(params)
+    return Object.keys(normalizedParams)
       .sort()
       .map((key) => {
         if (mode === 'raw') {

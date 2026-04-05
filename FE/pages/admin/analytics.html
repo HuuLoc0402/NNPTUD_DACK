@@ -174,6 +174,21 @@
             margin-top: 5px;
         }
 
+        .stat-box.positive .change {
+            color: var(--success);
+        }
+
+        .stat-box.negative .change {
+            color: var(--danger);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 13px;
+        }
+
         .table-section {
             background: white;
             padding: 25px;
@@ -283,7 +298,7 @@
 
             <!-- CHARTS -->
             <div class="chart-section">
-                <h2>Biểu Đồ Bán Hàng</h2>
+                <h2 id="salesChartTitle">Biểu Đồ Bán Hàng</h2>
                 <div class="charts-grid">
                     <div class="chart-container">
                         <canvas id="revenueChart"></canvas>
@@ -296,7 +311,7 @@
 
             <!-- TOP PRODUCTS -->
             <div class="table-section">
-                <h2>Sản Phẩm Bán Chạy Tuần Này</h2>
+                <h2 id="topProductsTitle">Sản Phẩm Bán Chạy</h2>
                 <table>
                     <thead>
                         <tr>
@@ -315,7 +330,7 @@
 
             <!-- TOP CATEGORIES -->
             <div class="table-section" style="margin-top: 30px;">
-                <h2>Doanh Thu Theo Danh Mục</h2>
+                <h2 id="categoriesRevenueTitle">Doanh Thu Theo Danh Mục</h2>
                 <table>
                     <thead>
                         <tr>
@@ -334,6 +349,598 @@
     </div>
 
     <script>
+        const API_BASE_URL = 'http://127.0.0.1:5000/api/v1';
+        const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+        let revenueChartInstance = null;
+        let ordersChartInstance = null;
+        let analyticsState = {
+            loaded: false,
+            orders: [],
+            products: [],
+            categories: []
+        };
+
+        function getAuthToken() {
+            return localStorage.getItem('marc_auth_token') || localStorage.getItem('authToken');
+        }
+
+        function formatCurrency(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')}₫`;
+        }
+
+        function formatCompactCurrency(value) {
+            const amount = Number(value || 0);
+            if (amount >= 1000000000) {
+                return `${(amount / 1000000000).toFixed(1)}B`;
+            }
+            if (amount >= 1000000) {
+                return `${(amount / 1000000).toFixed(1)}M`;
+            }
+            if (amount >= 1000) {
+                return `${(amount / 1000).toFixed(1)}K`;
+            }
+            return amount.toLocaleString('vi-VN');
+        }
+
+        function formatDateInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function startOfDay(date) {
+            const nextDate = new Date(date);
+            nextDate.setHours(0, 0, 0, 0);
+            return nextDate;
+        }
+
+        function endOfDay(date) {
+            const nextDate = new Date(date);
+            nextDate.setHours(23, 59, 59, 999);
+            return nextDate;
+        }
+
+        function getPresetRange(period) {
+            const today = new Date();
+            const end = endOfDay(today);
+
+            if (period === 'week') {
+                const start = startOfDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6));
+                return { start, end, granularity: 'day', label: '7 ngày gần nhất' };
+            }
+
+            if (period === 'month') {
+                const start = startOfDay(new Date(today.getFullYear(), today.getMonth(), 1));
+                return { start, end, granularity: 'day', label: `Tháng ${today.getMonth() + 1}/${today.getFullYear()}` };
+            }
+
+            if (period === 'year') {
+                const start = startOfDay(new Date(today.getFullYear(), 0, 1));
+                return { start, end, granularity: 'month', label: `Năm ${today.getFullYear()}` };
+            }
+
+            const start = startOfDay(today);
+            return { start, end, granularity: 'hour', label: 'Hôm nay' };
+        }
+
+        function getCurrentRange() {
+            const fromDateValue = document.getElementById('fromDate').value;
+            const toDateValue = document.getElementById('toDate').value;
+            const selectedPeriod = document.getElementById('periodSelect').value;
+
+            if (!fromDateValue && !toDateValue) {
+                return {
+                    ...getPresetRange(selectedPeriod || 'today'),
+                    period: selectedPeriod || 'today'
+                };
+            }
+
+            const fallbackRange = getPresetRange(selectedPeriod || 'today');
+            const start = fromDateValue ? startOfDay(new Date(fromDateValue)) : fallbackRange.start;
+            const end = toDateValue ? endOfDay(new Date(toDateValue)) : fallbackRange.end;
+
+            if (start > end) {
+                throw new Error('Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.');
+            }
+
+            const diffDays = Math.floor((end.getTime() - start.getTime()) / DAY_IN_MS) + 1;
+            const granularity = diffDays <= 1 ? 'hour' : diffDays > 62 ? 'month' : 'day';
+
+            return {
+                start,
+                end,
+                granularity,
+                label: `${start.toLocaleDateString('vi-VN')} - ${end.toLocaleDateString('vi-VN')}`,
+                period: selectedPeriod || 'custom'
+            };
+        }
+
+        function getPreviousRange(range) {
+            const duration = range.end.getTime() - range.start.getTime();
+            const end = new Date(range.start.getTime() - 1);
+            const start = new Date(end.getTime() - duration);
+            return {
+                ...range,
+                start,
+                end,
+                label: `${start.toLocaleDateString('vi-VN')} - ${end.toLocaleDateString('vi-VN')}`
+            };
+        }
+
+        function isOrderInRange(order, range) {
+            const createdAt = new Date(order.createdAt);
+            return createdAt >= range.start && createdAt <= range.end;
+        }
+
+        function isActiveOrder(order) {
+            return order.orderStatus !== 'cancelled';
+        }
+
+        function calculateChange(currentValue, previousValue) {
+            if (previousValue === 0) {
+                return {
+                    text: currentValue > 0 ? 'Tăng mới so với kỳ trước' : 'Không thay đổi so với kỳ trước',
+                    className: currentValue > 0 ? 'positive' : ''
+                };
+            }
+
+            const percentage = ((currentValue - previousValue) / previousValue) * 100;
+            const prefix = percentage > 0 ? '+' : '';
+            return {
+                text: `${prefix}${percentage.toFixed(1)}% so với kỳ trước`,
+                className: percentage > 0 ? 'positive' : percentage < 0 ? 'negative' : ''
+            };
+        }
+
+        async function apiGet(path) {
+            const token = getAuthToken();
+            const response = await fetch(`${API_BASE_URL}${path}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Không thể tải dữ liệu thống kê.');
+            }
+
+            return Array.isArray(data.data) ? data.data : [];
+        }
+
+        async function fetchAnalyticsData(forceReload = false) {
+            if (analyticsState.loaded && !forceReload) {
+                return analyticsState;
+            }
+
+            const [orders, products, categories] = await Promise.all([
+                apiGet('/orders/admin/all'),
+                apiGet('/products?limit=500'),
+                apiGet('/categories')
+            ]);
+
+            analyticsState = {
+                loaded: true,
+                orders,
+                products,
+                categories
+            };
+
+            return analyticsState;
+        }
+
+        function buildProductSalesMap(orders, productMap) {
+            const salesMap = new Map();
+
+            orders.filter(isActiveOrder).forEach((order) => {
+                (order.items || []).forEach((item) => {
+                    const productId = String(item.product?._id || item.product || '');
+                    if (!productId) {
+                        return;
+                    }
+
+                    const product = productMap.get(productId);
+                    const revenue = Number(item.totalPrice || Number(item.price || 0) * Number(item.quantity || 0));
+                    const sold = Number(item.quantity || 0);
+                    const existing = salesMap.get(productId) || {
+                        productId,
+                        name: item.productName || product?.name || 'Sản phẩm không xác định',
+                        categoryName: product?.category?.name || 'Chưa phân loại',
+                        sold: 0,
+                        revenue: 0
+                    };
+
+                    existing.sold += sold;
+                    existing.revenue += revenue;
+                    salesMap.set(productId, existing);
+                });
+            });
+
+            return salesMap;
+        }
+
+        function buildCategoryRevenue(currentOrders, products, categories) {
+            const categoriesMap = new Map();
+
+            categories.forEach((category) => {
+                categoriesMap.set(String(category._id), {
+                    categoryId: String(category._id),
+                    name: category.name,
+                    productCount: 0,
+                    revenue: 0
+                });
+            });
+
+            products.forEach((product) => {
+                const categoryId = String(product.category?._id || product.categoryId || '');
+                if (!categoryId) {
+                    return;
+                }
+
+                const entry = categoriesMap.get(categoryId) || {
+                    categoryId,
+                    name: product.category?.name || 'Chưa phân loại',
+                    productCount: 0,
+                    revenue: 0
+                };
+
+                entry.productCount += 1;
+                categoriesMap.set(categoryId, entry);
+            });
+
+            const productMap = new Map(products.map((product) => [String(product._id), product]));
+
+            currentOrders.filter(isActiveOrder).forEach((order) => {
+                (order.items || []).forEach((item) => {
+                    const productId = String(item.product?._id || item.product || '');
+                    const product = productMap.get(productId);
+                    const categoryId = String(product?.category?._id || product?.categoryId || 'uncategorized');
+                    const categoryName = product?.category?.name || 'Chưa phân loại';
+                    const revenue = Number(item.totalPrice || Number(item.price || 0) * Number(item.quantity || 0));
+
+                    const entry = categoriesMap.get(categoryId) || {
+                        categoryId,
+                        name: categoryName,
+                        productCount: 0,
+                        revenue: 0
+                    };
+
+                    entry.revenue += revenue;
+                    categoriesMap.set(categoryId, entry);
+                });
+            });
+
+            return Array.from(categoriesMap.values())
+                .filter((item) => item.revenue > 0 || item.productCount > 0)
+                .sort((first, second) => second.revenue - first.revenue);
+        }
+
+        function buildTimeline(range, orders) {
+            const labels = [];
+            const revenueData = [];
+            const orderData = [];
+            const bucketMap = new Map();
+
+            if (range.granularity === 'hour') {
+                for (let hour = 0; hour < 24; hour += 1) {
+                    labels.push(`${String(hour).padStart(2, '0')}:00`);
+                    revenueData.push(0);
+                    orderData.push(0);
+                    bucketMap.set(String(hour), hour);
+                }
+
+                orders.forEach((order) => {
+                    const createdAt = new Date(order.createdAt);
+                    const index = bucketMap.get(String(createdAt.getHours()));
+                    if (index === undefined) {
+                        return;
+                    }
+
+                    orderData[index] += 1;
+                    if (isActiveOrder(order)) {
+                        revenueData[index] += Number(order.totalAmount || 0);
+                    }
+                });
+
+                return { labels, revenueData, orderData };
+            }
+
+            if (range.granularity === 'month') {
+                const cursor = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+                while (cursor <= range.end) {
+                    const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+                    bucketMap.set(key, labels.length);
+                    labels.push(`T${cursor.getMonth() + 1}/${cursor.getFullYear()}`);
+                    revenueData.push(0);
+                    orderData.push(0);
+                    cursor.setMonth(cursor.getMonth() + 1);
+                }
+
+                orders.forEach((order) => {
+                    const createdAt = new Date(order.createdAt);
+                    const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
+                    const index = bucketMap.get(key);
+                    if (index === undefined) {
+                        return;
+                    }
+
+                    orderData[index] += 1;
+                    if (isActiveOrder(order)) {
+                        revenueData[index] += Number(order.totalAmount || 0);
+                    }
+                });
+
+                return { labels, revenueData, orderData };
+            }
+
+            const cursor = new Date(range.start);
+            cursor.setHours(0, 0, 0, 0);
+            while (cursor <= range.end) {
+                const key = formatDateInput(cursor);
+                bucketMap.set(key, labels.length);
+                labels.push(cursor.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }));
+                revenueData.push(0);
+                orderData.push(0);
+                cursor.setDate(cursor.getDate() + 1);
+            }
+
+            orders.forEach((order) => {
+                const createdAt = new Date(order.createdAt);
+                const key = formatDateInput(createdAt);
+                const index = bucketMap.get(key);
+                if (index === undefined) {
+                    return;
+                }
+
+                orderData[index] += 1;
+                if (isActiveOrder(order)) {
+                    revenueData[index] += Number(order.totalAmount || 0);
+                }
+            });
+
+            return { labels, revenueData, orderData };
+        }
+
+        function renderStats(currentOrders, previousOrders) {
+            const activeCurrentOrders = currentOrders.filter(isActiveOrder);
+            const activePreviousOrders = previousOrders.filter(isActiveOrder);
+            const revenue = activeCurrentOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0);
+            const previousRevenue = activePreviousOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0);
+            const totalOrders = currentOrders.length;
+            const previousTotalOrders = previousOrders.length;
+            const soldItems = activeCurrentOrders.reduce((sum, order) => sum + Number(order.totalItems || 0), 0);
+            const previousSoldItems = activePreviousOrders.reduce((sum, order) => sum + Number(order.totalItems || 0), 0);
+            const customers = new Set(currentOrders.map((order) => String(order.user?._id || order.user || '')).filter(Boolean)).size;
+            const previousCustomers = new Set(previousOrders.map((order) => String(order.user?._id || order.user || '')).filter(Boolean)).size;
+            const stats = [
+                {
+                    title: 'Doanh Thu',
+                    value: `${formatCompactCurrency(revenue)}₫`,
+                    change: calculateChange(revenue, previousRevenue)
+                },
+                {
+                    title: 'Đơn Hàng',
+                    value: totalOrders.toLocaleString('vi-VN'),
+                    change: calculateChange(totalOrders, previousTotalOrders)
+                },
+                {
+                    title: 'Sản Phẩm Đã Bán',
+                    value: soldItems.toLocaleString('vi-VN'),
+                    change: calculateChange(soldItems, previousSoldItems)
+                },
+                {
+                    title: 'Khách Mua',
+                    value: customers.toLocaleString('vi-VN'),
+                    change: calculateChange(customers, previousCustomers)
+                }
+            ];
+
+            document.getElementById('statsSummary').innerHTML = stats.map((item) => `
+                <div class="stat-box ${item.change.className}">
+                    <h3>${item.title}</h3>
+                    <div class="value">${item.value}</div>
+                    <div class="change">${item.change.text}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderCharts(range, orders) {
+            const { labels, revenueData, orderData } = buildTimeline(range, orders);
+            const revenueContext = document.getElementById('revenueChart').getContext('2d');
+            const ordersContext = document.getElementById('ordersChart').getContext('2d');
+
+            if (revenueChartInstance) {
+                revenueChartInstance.destroy();
+            }
+
+            if (ordersChartInstance) {
+                ordersChartInstance.destroy();
+            }
+
+            revenueChartInstance = new Chart(revenueContext, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Doanh thu',
+                        data: revenueData,
+                        borderColor: '#DC3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.15)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label(context) {
+                                    return formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback(value) {
+                                    return formatCompactCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            ordersChartInstance = new Chart(ordersContext, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Số đơn',
+                        data: orderData,
+                        backgroundColor: '#2C3E50',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTopProducts(range, currentOrders, previousOrders, products) {
+            const tbody = document.getElementById('topProductsBody');
+            const productMap = new Map(products.map((product) => [String(product._id), product]));
+            const currentSalesMap = buildProductSalesMap(currentOrders, productMap);
+            const previousSalesMap = buildProductSalesMap(previousOrders, productMap);
+            const rows = Array.from(currentSalesMap.values())
+                .sort((first, second) => second.sold - first.sold || second.revenue - first.revenue)
+                .slice(0, 10)
+                .map((item) => {
+                    const previous = previousSalesMap.get(item.productId);
+                    const previousRevenue = previous?.revenue || 0;
+                    const growth = previousRevenue === 0
+                        ? (item.revenue > 0 ? 'Mới' : '0%')
+                        : `${(((item.revenue - previousRevenue) / previousRevenue) * 100).toFixed(1)}%`;
+
+                    return `
+                        <tr>
+                            <td><strong>${item.name}</strong></td>
+                            <td>${item.categoryName}</td>
+                            <td>${item.sold.toLocaleString('vi-VN')}</td>
+                            <td>${formatCurrency(item.revenue)}</td>
+                            <td>${growth}</td>
+                        </tr>
+                    `;
+                });
+
+            document.getElementById('topProductsTitle').textContent = `Sản Phẩm Bán Chạy - ${range.label}`;
+
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Không có dữ liệu sản phẩm trong khoảng thời gian này.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.join('');
+        }
+
+        function renderCategoryRevenue(range, currentOrders, products, categories) {
+            const tbody = document.getElementById('categoriesRevenueBody');
+            const rows = buildCategoryRevenue(currentOrders, products, categories);
+            const totalRevenue = rows.reduce((sum, item) => sum + Number(item.revenue || 0), 0);
+
+            document.getElementById('categoriesRevenueTitle').textContent = `Doanh Thu Theo Danh Mục - ${range.label}`;
+
+            if (rows.length === 0 || totalRevenue === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Không có dữ liệu doanh thu theo danh mục.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.slice(0, 10).map((item) => `
+                <tr>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.productCount.toLocaleString('vi-VN')}</td>
+                    <td>${formatCurrency(item.revenue)}</td>
+                    <td>${((item.revenue / totalRevenue) * 100).toFixed(1)}%</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderLoadingState() {
+            document.getElementById('statsSummary').innerHTML = `
+                <div class="stat-box">
+                    <h3>Đang tải</h3>
+                    <div class="value">...</div>
+                    <div class="change">Đang tổng hợp dữ liệu thống kê</div>
+                </div>
+            `;
+            document.getElementById('topProductsBody').innerHTML = '<tr><td colspan="5" class="empty-state">Đang tải dữ liệu...</td></tr>';
+            document.getElementById('categoriesRevenueBody').innerHTML = '<tr><td colspan="4" class="empty-state">Đang tải dữ liệu...</td></tr>';
+        }
+
+        function renderAnalyticsError(message) {
+            document.getElementById('statsSummary').innerHTML = `
+                <div class="stat-box negative">
+                    <h3>Lỗi dữ liệu</h3>
+                    <div class="value">--</div>
+                    <div class="change">${message}</div>
+                </div>
+            `;
+            document.getElementById('topProductsBody').innerHTML = `<tr><td colspan="5" class="empty-state">${message}</td></tr>`;
+            document.getElementById('categoriesRevenueBody').innerHTML = `<tr><td colspan="4" class="empty-state">${message}</td></tr>`;
+        }
+
+        async function loadAnalytics(forceReload = false) {
+            try {
+                renderLoadingState();
+
+                if (typeof Chart === 'undefined') {
+                    throw new Error('Không tải được thư viện biểu đồ Chart.js.');
+                }
+
+                const { orders, products, categories } = await fetchAnalyticsData(forceReload);
+                const currentRange = getCurrentRange();
+                const previousRange = getPreviousRange(currentRange);
+                const currentOrders = orders.filter((order) => isOrderInRange(order, currentRange));
+                const previousOrders = orders.filter((order) => isOrderInRange(order, previousRange));
+
+                document.getElementById('salesChartTitle').textContent = `Biểu Đồ Bán Hàng - ${currentRange.label}`;
+
+                renderStats(currentOrders, previousOrders);
+                renderCharts(currentRange, currentOrders);
+                renderTopProducts(currentRange, currentOrders, previousOrders, products);
+                renderCategoryRevenue(currentRange, currentOrders, products, categories);
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                renderAnalyticsError(error.message || 'Không thể tải dữ liệu thống kê.');
+            }
+        }
+
+        function applyPresetDates(period) {
+            const preset = getPresetRange(period || 'today');
+            document.getElementById('fromDate').value = formatDateInput(preset.start);
+            document.getElementById('toDate').value = formatDateInput(preset.end);
+        }
+
         function logout() {
             if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
                 clearAuthState();
@@ -381,7 +988,28 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            validateAdminAccess();
+            if (!validateAdminAccess()) {
+                return;
+            }
+
+            applyPresetDates(document.getElementById('periodSelect').value || 'today');
+
+            document.getElementById('periodSelect').addEventListener('change', function() {
+                applyPresetDates(this.value || 'today');
+                loadAnalytics();
+            });
+
+            document.getElementById('fromDate').addEventListener('change', function() {
+                document.getElementById('periodSelect').value = '';
+                loadAnalytics();
+            });
+
+            document.getElementById('toDate').addEventListener('change', function() {
+                document.getElementById('periodSelect').value = '';
+                loadAnalytics();
+            });
+
+            loadAnalytics(true);
         });
 
         window.addEventListener('pageshow', function() {

@@ -228,7 +228,7 @@
         <section class="result-card">
             <div class="hero">
                 <div class="hero-icon"><i class="fas fa-check"></i></div>
-                <h1>Thanh toán thành công</h1>
+                <h1 id="successTitle">Thanh toán thành công</h1>
                 <p id="successMessage">Giao dịch của bạn đã được xác nhận. Đơn hàng đang chờ admin xử lý.</p>
             </div>
 
@@ -247,7 +247,7 @@
                         <div class="meta-row"><span>Mã đơn hàng</span><span>Đang tải...</span></div>
                     </div>
                     <div class="actions">
-                        <a href="order-history.html" class="btn-link btn-primary">Xem lịch sử đơn hàng</a>
+                        <a id="primarySuccessAction" href="order-history.html" class="btn-link btn-primary">Xem lịch sử đơn hàng</a>
                         <a href="product-list.html" class="btn-link btn-secondary">Tiếp tục mua sắm</a>
                     </div>
                 </div>
@@ -279,16 +279,29 @@
             return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
         }
 
+        function getEffectivePaymentMethod(order = null) {
+            return String(order?.paymentMethod || getQueryParam('paymentMethod') || 'vnpay').toLowerCase();
+        }
+
+        function getReadablePaymentStatus(status, paymentMethod) {
+            if (String(paymentMethod || '').toLowerCase() === 'cod' && String(status || '').toLowerCase() !== 'completed') {
+                return 'Thanh toán khi nhận hàng';
+            }
+
+            return String(status || 'completed');
+        }
+
         function resolveImageUrl(path) {
             return window.CONFIG?.resolveMediaUrl(path, '../../assets/images/banner1.png') || '../../assets/images/banner1.png';
         }
 
         function renderMeta(order) {
-            const paymentMethod = String(order?.paymentMethod || getQueryParam('paymentMethod') || 'vnpay').toUpperCase();
+            const paymentMethod = getEffectivePaymentMethod(order);
+            const paymentStatus = getReadablePaymentStatus(order?.paymentStatus || getQueryParam('paymentStatus') || 'completed', paymentMethod);
             document.getElementById('successMeta').innerHTML = `
                 <div class="meta-row"><span>Mã đơn hàng</span><span>${escapeHtml(order?.orderCode || order?._id || getQueryParam('orderId'))}</span></div>
-                <div class="meta-row"><span>Thanh toán</span><span>${escapeHtml(paymentMethod)}</span></div>
-                <div class="meta-row"><span>Trạng thái thanh toán</span><span>${escapeHtml(order?.paymentStatus || 'completed')}</span></div>
+                <div class="meta-row"><span>Thanh toán</span><span>${escapeHtml(String(paymentMethod).toUpperCase())}</span></div>
+                <div class="meta-row"><span>Trạng thái thanh toán</span><span>${escapeHtml(paymentStatus)}</span></div>
                 <div class="meta-row"><span>Tổng tiền</span><span>${formatCurrency(order?.totalAmount || 0)}</span></div>
             `;
         }
@@ -315,9 +328,17 @@
         }
 
         async function loadOrder() {
+            const paymentMethod = getEffectivePaymentMethod();
             const message = getQueryParam('message');
+            const isCodOrder = paymentMethod === 'cod';
+
+            document.getElementById('successTitle').textContent = isCodOrder ? 'Đặt hàng thành công' : 'Thanh toán thành công';
+            document.getElementById('primarySuccessAction').textContent = isCodOrder ? 'Xem đơn hàng của tôi' : 'Xem lịch sử đơn hàng';
+
             if (message) {
                 document.getElementById('successMessage').textContent = message;
+            } else if (isCodOrder) {
+                document.getElementById('successMessage').textContent = 'Đơn hàng thanh toán khi nhận hàng đã được tiếp nhận. Bạn sẽ thanh toán trực tiếp khi nhận hàng.';
             }
 
             const orderId = getQueryParam('orderId');

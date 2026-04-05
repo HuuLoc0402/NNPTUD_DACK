@@ -41,6 +41,10 @@ exports.updateOrder = (orderId, updateData) => {
     .populate('items.product', 'name slug image images');
 };
 
+exports.deleteOrder = (orderId) => {
+  return Order.findByIdAndDelete(orderId);
+};
+
 exports.formatOrder = (orderDoc) => {
   const order = orderDoc.toObject ? orderDoc.toObject() : orderDoc;
   const shippingAddress = formatShippingAddress(order.shippingAddress);

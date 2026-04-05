@@ -132,7 +132,47 @@ const applyInventoryForOrder = async (order) => {
   return { updated: true };
 };
 
+const revertInventoryForOrder = async (order) => {
+  if (!order || !order.inventoryAdjustedAt) {
+    return { updated: false };
+  }
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  for (const item of items) {
+    const productId = item?.product?._id || item?.product;
+    const quantity = getOrderItemQuantity(item);
+    if (!productId || quantity <= 0) {
+      continue;
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      continue;
+    }
+
+    if (Array.isArray(product.variants) && product.variants.length) {
+      const variantIndex = findVariantIndex(product, item);
+      if (variantIndex < 0) {
+        throw new Error(`Không tìm thấy biến thể phù hợp cho ${buildItemLabel(item)} để hoàn kho.`);
+      }
+
+      product.variants[variantIndex].stock = Math.max(0, Number(product.variants[variantIndex].stock || 0) + quantity);
+      product.quantity = product.variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stock || 0)), 0);
+    } else {
+      product.quantity = Math.max(0, Number(product.quantity || 0) + quantity);
+    }
+
+    await product.save();
+  }
+
+  order.inventoryAdjustedAt = undefined;
+  await order.save();
+
+  return { updated: true };
+};
+
 module.exports = {
   validateOrderInventory,
-  applyInventoryForOrder
+  applyInventoryForOrder,
+  revertInventoryForOrder
 };

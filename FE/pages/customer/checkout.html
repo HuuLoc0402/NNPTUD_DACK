@@ -1133,6 +1133,7 @@
             const originalText = confirmButton.textContent;
             confirmButton.disabled = true;
             confirmButton.textContent = 'Đang xử lý...';
+            const paymentMethod = getPaymentMethod();
 
             try {
                 const orderResponse = await window.apiClient.post('/orders', buildOrderPayload());
@@ -1142,7 +1143,7 @@
                     throw new Error('Không thể tạo đơn hàng');
                 }
 
-                if (getPaymentMethod() === 'vnpay') {
+                if (paymentMethod === 'vnpay') {
                     try {
                         const paymentResponse = await window.apiClient.post('/payments/vnpay', {
                             orderId: order._id,
@@ -1164,11 +1165,10 @@
                 }
 
                 persistCartItems([]);
-                alert('Đơn hàng của bạn đã được đặt thành công!');
-                window.location.href = 'order-history.html';
+                window.location.href = `payment-success.html?orderId=${encodeURIComponent(order._id)}&paymentMethod=${encodeURIComponent(paymentMethod || 'cod')}&paymentStatus=${encodeURIComponent(order.paymentStatus || 'pending')}&message=${encodeURIComponent('Đơn hàng thanh toán khi nhận hàng đã được tiếp nhận thành công.')}`;
             } catch (error) {
                 console.error('Checkout error:', error);
-                alert(error.message || 'Không thể hoàn tất thanh toán lúc này.');
+                window.location.href = `payment-failed.html?paymentMethod=${encodeURIComponent(paymentMethod || 'cod')}&paymentStatus=failed&message=${encodeURIComponent(error.message || 'Không thể hoàn tất đơn hàng lúc này.')}`;
             } finally {
                 confirmButton.disabled = false;
                 confirmButton.textContent = originalText;
