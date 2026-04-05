@@ -139,6 +139,7 @@
                 const data = await response.json();
 
                 if (data.success && Array.isArray(data.data)) {
+                    window.homepageCategories = data.data;
                     renderCategories(data.data);
                 } else {
                     console.error('Failed to load categories:', data.message);

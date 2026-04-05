@@ -18,8 +18,19 @@ exports.findUserById = (userId) => {
   return User.findById(userId);
 };
 
+exports.findUserByIdWithPassword = (userId) => {
+  return User.findById(userId).select('+password');
+};
+
 exports.findUserByRefreshToken = (refreshToken) => {
   return User.findOne({ refreshToken });
+};
+
+exports.findUserByPasswordResetToken = (passwordResetToken) => {
+  return User.findOne({
+    passwordResetToken,
+    passwordResetExpires: { $gt: new Date() }
+  }).select('+passwordResetToken +passwordResetExpires +password');
 };
 
 exports.saveUser = async (user) => {

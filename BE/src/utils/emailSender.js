@@ -78,13 +78,26 @@ class EmailSender {
   }
 
   // Send password reset email
-  async sendPasswordReset(userEmail, resetLink) {
+  async sendPasswordReset(userEmail, resetLink, userName = '') {
     const htmlContent = `
-      <h1>Password Reset Request</h1>
-      <p>You requested to reset your password.</p>
-      <p><a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a></p>
-      <p>If you didn't request this, please ignore this email.</p>
-      <p>Best regards,<br>MARC Fashion Team</p>
+      <div style="font-family: Arial, Helvetica, sans-serif; background:#f8f4ef; padding:24px; color:#2b2b2b;">
+        <div style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #eee3da;">
+          <div style="padding:28px 32px; background:linear-gradient(135deg, #fff1e4 0%, #fffaf5 100%); border-bottom:1px solid #f0e3d7;">
+            <div style="font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:#b85c38; font-weight:700; margin-bottom:8px;">MARC Fashion</div>
+            <h1 style="margin:0; font-size:28px; line-height:1.2; color:#2e3138;">Yêu cầu đặt lại mật khẩu</h1>
+            <p style="margin:10px 0 0; color:#626d79; line-height:1.6;">Xin chào ${escapeHtml(userName || 'quý khách')}, chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+          </div>
+          <div style="padding:28px 32px;">
+            <p style="margin:0 0 18px; line-height:1.7; color:#49515c;">Nhấn vào nút bên dưới để tạo mật khẩu mới. Liên kết này sẽ hết hạn sau 15 phút.</p>
+            <p style="margin:0 0 20px;">
+              <a href="${resetLink}" style="display:inline-block; background:#DC3545; color:#ffffff; padding:14px 22px; border-radius:999px; text-decoration:none; font-weight:700;">Đặt lại mật khẩu</a>
+            </p>
+            <p style="margin:0 0 12px; color:#626d79; line-height:1.7;">Nếu nút không hoạt động, bạn có thể sao chép liên kết sau và mở trong trình duyệt:</p>
+            <p style="margin:0 0 20px; word-break:break-all; color:#2e3138;"><a href="${resetLink}" style="color:#b85c38;">${resetLink}</a></p>
+            <p style="margin:0; color:#7b8189; line-height:1.7;">Nếu bạn không yêu cầu thao tác này, hãy bỏ qua email. Mật khẩu hiện tại của bạn sẽ không bị thay đổi cho tới khi bạn xác nhận trên liên kết ở trên.</p>
+          </div>
+        </div>
+      </div>
     `;
 
     try {

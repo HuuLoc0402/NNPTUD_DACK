@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const EmailSender = require('../utils/emailSender');
@@ -8,8 +9,35 @@ const upload = require('../middleware/upload');
 const {
 	validateLogin,
 	validateRegister,
-	validateProfileUpdate
+	validateProfileUpdate,
+	validateForgotPasswordRequest,
+	validatePasswordReset,
+	validateChangePassword
 } = require('../utils/validator');
+
+const buildClientOrigin = () => {
+	const fallback = 'http://127.0.0.1:5500';
+	const configured = String(process.env.CLIENT_URL || fallback).trim();
+
+	try {
+		const parsed = new URL(configured);
+		return parsed.origin;
+	} catch (error) {
+		return fallback;
+	}
+};
+
+const buildForgotPasswordPageUrl = (token) => {
+	const clientOrigin = buildClientOrigin();
+	const url = new URL('/FE/pages/auth/forgetpassword.html', clientOrigin);
+	if (token) {
+		url.searchParams.set('token', token);
+	}
+	return url.toString();
+};
+
+const generatePasswordResetToken = () => crypto.randomBytes(32).toString('hex');
+const hashPasswordResetToken = (token) => crypto.createHash('sha256').update(String(token || '')).digest('hex');
 
 router.post('/register', async (req, res, next) => {
 	try {
@@ -97,6 +125,80 @@ router.post('/login', async (req, res, next) => {
 			accessToken,
 			refreshToken,
 			expiresIn
+		});
+	} catch (error) {
+		next(error);
+	}
+});
+
+router.post('/forgot-password', async (req, res, next) => {
+	try {
+		const { email } = req.body;
+		const validation = validateForgotPasswordRequest(email);
+
+		if (!validation.isValid) {
+			return res.status(400).json({
+				success: false,
+				message: 'Validation failed',
+				errors: validation.errors
+			});
+		}
+
+		const user = await authController.findUserByEmail(email);
+		if (user && user.provider === 'local' && user.isActive) {
+			const resetToken = generatePasswordResetToken();
+			user.passwordResetToken = hashPasswordResetToken(resetToken);
+			user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
+			await authController.saveUser(user);
+
+			try {
+				await EmailSender.sendPasswordReset(user.email, buildForgotPasswordPageUrl(resetToken), user.fullName);
+			} catch (error) {
+				console.error('Send password reset email error:', error.message);
+			}
+		}
+
+		return res.status(200).json({
+			success: true,
+			message: 'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi liên kết đặt lại mật khẩu.'
+		});
+	} catch (error) {
+		next(error);
+	}
+});
+
+router.post('/reset-password', async (req, res, next) => {
+	try {
+		const { token, password, confirmPassword } = req.body;
+		const validation = validatePasswordReset(password, confirmPassword);
+
+		if (!token) {
+			return res.status(400).json({ success: false, message: 'Token đặt lại mật khẩu không hợp lệ.' });
+		}
+
+		if (!validation.isValid) {
+			return res.status(400).json({
+				success: false,
+				message: 'Validation failed',
+				errors: validation.errors
+			});
+		}
+
+		const hashedToken = hashPasswordResetToken(token);
+		const user = await authController.findUserByPasswordResetToken(hashedToken);
+		if (!user) {
+			return res.status(400).json({ success: false, message: 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.' });
+		}
+
+		user.password = password;
+		user.passwordResetToken = null;
+		user.passwordResetExpires = null;
+		user.refreshToken = null;
+		await authController.saveUser(user);
+
+		return res.status(200).json({
+			success: true,
+			message: 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập lại ngay bây giờ.'
 		});
 	} catch (error) {
 		next(error);
@@ -223,12 +325,50 @@ router.put('/profile', authenticate, async (req, res, next) => {
 	}
 });
 
-router.post('/google-callback', (req, res) => {
-	return res.status(501).json({ success: false, message: 'Google login chưa được triển khai' });
-});
+router.put('/change-password', authenticate, async (req, res, next) => {
+	try {
+		if (req.userRole === 'admin') {
+			return res.status(403).json({ success: false, message: 'Tài khoản admin không đổi mật khẩu tại đây' });
+		}
 
-router.post('/facebook-callback', (req, res) => {
-	return res.status(501).json({ success: false, message: 'Facebook login chưa được triển khai' });
-});
+		const { currentPassword, newPassword, confirmPassword } = req.body;
+		const validation = validateChangePassword(currentPassword, newPassword, confirmPassword);
 
+		if (!validation.isValid) {
+			return res.status(400).json({
+				success: false,
+				message: 'Validation failed',
+				errors: validation.errors
+			});
+		}
+
+		const user = await authController.findUserByIdWithPassword(req.userId);
+		if (!user) {
+			return res.status(404).json({ success: false, message: 'User not found' });
+		}
+
+		const isPasswordMatch = await user.comparePassword(currentPassword);
+		if (!isPasswordMatch) {
+			return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không chính xác' });
+		}
+
+		user.password = newPassword;
+		user.passwordResetToken = null;
+		user.passwordResetExpires = null;
+		const { accessToken, refreshToken, expiresIn } = TokenManager.generateTokenPair(user._id, user.role);
+		user.refreshToken = refreshToken;
+		await authController.saveUser(user);
+
+		return res.status(200).json({
+			success: true,
+			message: 'Đổi mật khẩu thành công',
+			user: user.toJSON(),
+			accessToken,
+			refreshToken,
+			expiresIn
+		});
+	} catch (error) {
+		next(error);
+	}
+});
 module.exports = router;

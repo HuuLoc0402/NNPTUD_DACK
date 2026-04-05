@@ -105,6 +105,9 @@ window.AuthAPI = {
     register: (data) => window.apiClient.post('/auth/register', data),
     login: (data) => window.apiClient.post('/auth/login', data),
     logout: () => window.apiClient.post('/auth/logout', {}),
+    forgotPassword: (data) => window.apiClient.post('/auth/forgot-password', data),
+    resetPassword: (data) => window.apiClient.post('/auth/reset-password', data),
+    changePassword: (data) => window.apiClient.put('/auth/change-password', data),
     getProfile: () => window.apiClient.get('/auth/profile'),
     updateProfile: (data) => window.apiClient.put('/auth/profile', data),
     uploadProfileAvatar: (formData) => window.apiClient.postFormData('/auth/profile/avatar', formData)
@@ -163,7 +166,9 @@ window.CommentAPI = {
         return window.apiClient.get(`/comments/product/${productId}${queryString ? `?${queryString}` : ''}`);
     },
     getEligibility: (productId) => window.apiClient.get(`/comments/product/${productId}/eligibility`),
-    createComment: (data) => window.apiClient.post('/comments', data)
+    createComment: (data) => window.apiClient.post('/comments', data),
+    createCommentForm: (formData) => window.apiClient.postFormData('/comments', formData),
+    deleteComment: (commentId) => window.apiClient.delete(`/comments/${commentId}`)
 };
 
 window.SizeAPI = {

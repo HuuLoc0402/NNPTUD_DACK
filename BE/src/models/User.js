@@ -51,7 +51,17 @@ const userSchema = new mongoose.Schema(
       default: 'local'
     },
     lastLogin: Date,
-    refreshToken: String
+    refreshToken: String,
+    passwordResetToken: {
+      type: String,
+      select: false,
+      default: null
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+      default: null
+    }
   },
   { timestamps: true }
 );
@@ -79,6 +89,8 @@ userSchema.methods.toJSON = function() {
   const obj = this.toObject();
   delete obj.password;
   delete obj.refreshToken;
+  delete obj.passwordResetToken;
+  delete obj.passwordResetExpires;
   return obj;
 };
 

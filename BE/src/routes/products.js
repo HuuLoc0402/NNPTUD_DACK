@@ -326,7 +326,7 @@ router.get('/featured', async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      data: products.map((item) => productController.formatProduct(item, true))
+      data: products.map((item) => productController.formatProduct(item, false))
     });
   } catch (error) {
     next(error);
@@ -343,7 +343,7 @@ router.get('/top-rated', async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      data: products.map((item) => productController.formatProduct(item, true))
+      data: products.map((item) => productController.formatProduct(item, false))
     });
   } catch (error) {
     next(error);
@@ -390,7 +390,7 @@ router.get('/', async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      data: products.map((item) => productController.formatProduct(item, !adminView))
+      data: products.map((item) => productController.formatProduct(item, false))
     });
   } catch (error) {
     next(error);

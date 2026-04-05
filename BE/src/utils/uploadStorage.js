@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const uploadsRoot = path.resolve(__dirname, '../../uploads');
-const MANAGED_FOLDERS = ['product', 'category', 'collection', 'useravatar'];
+const MANAGED_FOLDERS = ['product', 'category', 'collection', 'useravatar', 'comments'];
 
 function ensureDirectory(directoryPath) {
   if (!fs.existsSync(directoryPath)) {
@@ -43,6 +43,10 @@ function resolveUploadFolder(req, file) {
 
   if (baseUrl.includes('/collections')) {
     return 'collection';
+  }
+
+  if (baseUrl.includes('/comments')) {
+    return 'comments';
   }
 
   return 'misc';

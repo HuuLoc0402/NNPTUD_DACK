@@ -175,7 +175,7 @@
 
                     <div class="review-form is-locked" id="reviewFormWrapper">
                         <h4>Viết đánh giá của bạn</h4>
-                        <p class="review-permission-message" id="reviewPermissionMessage">Bạn chỉ có thể đánh giá sau khi mua, thanh toán thành công và đơn hàng đã được admin hoàn tất.</p>
+                        <p class="review-permission-message" id="reviewPermissionMessage">Bạn chỉ có thể đánh giá sau khi đã mua và thanh toán thành công sản phẩm này.</p>
                         <form id="submitReviewForm">
                             <div class="form-group">
                                 <label>Đánh Giá</label>
@@ -190,6 +190,12 @@
                             <div class="form-group">
                                 <label>Bình Luận</label>
                                 <textarea id="reviewText" placeholder="Chia sẻ trải nghiệm của bạn..." required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="reviewImages">Hình Ảnh Thực Tế</label>
+                                <input type="file" id="reviewImages" accept="image/*" multiple>
+                                <p class="review-image-hint">Bạn có thể tải tối đa 5 ảnh, mỗi ảnh tối đa 5MB.</p>
+                                <div class="review-image-preview" id="reviewImagePreview"></div>
                             </div>
                             <button type="submit" class="btn btn-primary">Gửi Đánh Giá</button>
                         </form>
@@ -232,6 +238,8 @@
         let selectedSize = '';
         let selectedColor = '';
         let selectedRating = 0;
+        let selectedReviewImages = [];
+        let hasRatedCurrentProduct = false;
 
         function getUrlParameter(param) {
             return new URLSearchParams(window.location.search).get(param);
@@ -479,6 +487,19 @@
             return parts.slice(0, 2).map((item) => item.charAt(0).toUpperCase()).join('') || 'KH';
         }
 
+        function getReviewAvatarUrl(comment) {
+            return window.CONFIG?.resolveMediaUrl(comment?.user?.avatar, '') || '';
+        }
+
+        function getCurrentReviewUserId() {
+            const user = window.getStoredUser?.();
+            return String(user?._id || user?.id || '');
+        }
+
+        function canDeleteComment(comment) {
+            return Boolean(comment?._id && getCurrentReviewUserId() && String(comment?.user?._id || comment?.user?.id || '') === getCurrentReviewUserId());
+        }
+
         function renderColorOptions(product) {
             const container = document.getElementById('colorSelector');
             const label = document.getElementById('selectedColorLabel');
@@ -661,16 +682,24 @@
 
             container.innerHTML = comments.map((comment) => `
                 <article class="review-item">
-                    <div class="review-avatar">${escapeHtml(getReviewInitials(comment.user?.fullName || comment.user?.fullname))}</div>
+                    <div class="review-avatar ${getReviewAvatarUrl(comment) ? 'has-image' : ''}">
+                        ${getReviewAvatarUrl(comment)
+                            ? `<img src="${getReviewAvatarUrl(comment)}" alt="${escapeHtml(comment.user?.fullName || comment.user?.fullname || 'Khách hàng')}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                            : ''}
+                        <span class="review-avatar-fallback" style="display:${getReviewAvatarUrl(comment) ? 'none' : 'flex'};">${escapeHtml(getReviewInitials(comment.user?.fullName || comment.user?.fullname))}</span>
+                    </div>
                     <div class="review-content">
                         <div class="review-header">
-                            <span class="review-author">${escapeHtml(comment.user?.fullName || comment.user?.fullname || 'Khách hàng')}</span>
-                            <span class="review-date">${escapeHtml(formatReviewDate(comment.createdAt))}</span>
+                            <div class="review-meta">
+                                <span class="review-author">${escapeHtml(comment.user?.fullName || comment.user?.fullname || 'Khách hàng')}</span>
+                                <span class="review-date">${escapeHtml(formatReviewDate(comment.createdAt))}</span>
+                            </div>
+                            ${canDeleteComment(comment) ? `<button type="button" class="review-delete-btn" data-comment-id="${escapeHtml(comment._id)}">Xóa</button>` : ''}
                         </div>
-                        <div class="review-rating">${renderStars(comment.rating || 0)}</div>
-                        ${comment.isVerified ? '<span class="review-verified">Đã mua hàng, thanh toán thành công và đủ điều kiện đánh giá</span>' : ''}
+                        ${Number(comment.rating || 0) > 0 ? `<div class="review-rating">${renderStars(comment.rating || 0)}</div>` : '<div class="review-rating review-rating-note">Bình luận bổ sung sau khi đã đánh giá sao</div>'}
                         ${comment.title ? `<div class="review-title">${escapeHtml(comment.title)}</div>` : ''}
                         <div class="review-text">${escapeHtml(comment.content)}</div>
+                        ${renderCommentImages(comment.images || [])}
                     </div>
                 </article>
             `).join('');
@@ -684,15 +713,139 @@
             const textarea = document.getElementById('reviewText');
             const submitButton = document.querySelector('#submitReviewForm button[type="submit"]');
             const stars = document.querySelectorAll('#starRating i');
+            const imageInput = document.getElementById('reviewImages');
 
             wrapper.classList.toggle('is-locked', locked);
             permissionMessage.textContent = message || '';
             permissionMessage.style.display = message ? 'block' : 'none';
             textarea.disabled = locked;
             submitButton.disabled = locked;
+            imageInput.disabled = locked;
             stars.forEach((star) => {
                 star.classList.toggle('is-disabled', locked);
             });
+        }
+
+        function syncReviewRatingState() {
+            const stars = document.querySelectorAll('#starRating i');
+            stars.forEach((star) => {
+                star.classList.toggle('is-disabled', hasRatedCurrentProduct || document.getElementById('reviewFormWrapper').classList.contains('is-locked'));
+            });
+
+            if (hasRatedCurrentProduct) {
+                selectedRating = 0;
+                stars.forEach((star) => {
+                    star.classList.remove('fas', 'active');
+                    star.classList.add('far');
+                });
+            }
+        }
+
+        function renderCommentImages(images = []) {
+            const imageUrls = (Array.isArray(images) ? images : [])
+                .map((item) => window.CONFIG.resolveMediaUrl(item, ''))
+                .filter(Boolean);
+
+            if (!imageUrls.length) {
+                return '';
+            }
+
+            return `
+                <div class="review-images">
+                    ${imageUrls.map((imageUrl, index) => `
+                        <button type="button" class="review-image-thumb" data-review-image="${escapeHtml(imageUrl)}" aria-label="Xem ảnh đánh giá ${index + 1}">
+                            <img src="${imageUrl}" alt="Ảnh đánh giá ${index + 1}" onerror="this.src='../../assets/images/banner1.png'">
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderReviewImagePreview() {
+            const preview = document.getElementById('reviewImagePreview');
+
+            if (!selectedReviewImages.length) {
+                preview.innerHTML = '';
+                return;
+            }
+
+            preview.innerHTML = selectedReviewImages.map((file, index) => `
+                <div class="review-preview-card">
+                    <img src="${URL.createObjectURL(file)}" alt="Ảnh xem trước ${index + 1}">
+                    <button type="button" class="review-preview-remove" data-index="${index}" aria-label="Xóa ảnh xem trước ${index + 1}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function syncReviewImageInput() {
+            const input = document.getElementById('reviewImages');
+            const dataTransfer = new DataTransfer();
+            selectedReviewImages.forEach((file) => dataTransfer.items.add(file));
+            input.files = dataTransfer.files;
+        }
+
+        function resetReviewImageSelection() {
+            selectedReviewImages = [];
+            document.getElementById('reviewImages').value = '';
+            renderReviewImagePreview();
+        }
+
+        function handleReviewImageSelection(event) {
+            const files = Array.from(event.target.files || []);
+            const imageFiles = files.filter((file) => /^image\//i.test(file.type));
+
+            if (imageFiles.length !== files.length) {
+                alert('Chỉ được chọn tệp hình ảnh.');
+            }
+
+            const nextImages = [...selectedReviewImages, ...imageFiles].slice(0, 5);
+            if (selectedReviewImages.length + imageFiles.length > 5) {
+                alert('Bạn chỉ có thể tải tối đa 5 ảnh cho mỗi đánh giá.');
+            }
+
+            selectedReviewImages = nextImages;
+            syncReviewImageInput();
+            renderReviewImagePreview();
+        }
+
+        function handleReviewImagePreviewClick(event) {
+            const removeButton = event.target.closest('.review-preview-remove');
+            if (!removeButton) {
+                return;
+            }
+
+            const index = Number(removeButton.dataset.index);
+            if (Number.isNaN(index)) {
+                return;
+            }
+
+            selectedReviewImages.splice(index, 1);
+            syncReviewImageInput();
+            renderReviewImagePreview();
+        }
+
+        async function handleCommentDelete(commentId) {
+            if (!commentId || !currentProduct) {
+                return;
+            }
+
+            const confirmed = window.confirm('Bạn có chắc muốn xóa đánh giá này không?');
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                await window.CommentAPI.deleteComment(commentId);
+                await Promise.all([
+                    loadComments(currentProduct._id),
+                    loadReviewEligibility(currentProduct._id)
+                ]);
+                alert('Đã xóa đánh giá thành công.');
+            } catch (error) {
+                alert(error.message || 'Không thể xóa đánh giá lúc này.');
+            }
         }
 
         async function loadSizeChart(product) {
@@ -717,16 +870,25 @@
 
         async function loadReviewEligibility(productId) {
             if (!window.apiClient?.isAuthenticated()) {
-                setReviewFormLockedState(true, 'Vui lòng đăng nhập và chỉ đánh giá sau khi đơn hàng đã thanh toán thành công và được admin hoàn tất.');
+                hasRatedCurrentProduct = false;
+                setReviewFormLockedState(true, 'Vui lòng đăng nhập và chỉ đánh giá sau khi đã mua và thanh toán thành công sản phẩm này.');
+                syncReviewRatingState();
                 return;
             }
 
             try {
                 const response = await window.CommentAPI.getEligibility(productId);
-                setReviewFormLockedState(!response.data?.canComment, response.data?.canComment ? '' : response.data?.message);
+                hasRatedCurrentProduct = Boolean(response.data?.hasRated);
+                const formMessage = !response.data?.canComment
+                    ? response.data?.message
+                    : (hasRatedCurrentProduct ? 'Bạn đã chấm sao cho sản phẩm này rồi. Bạn vẫn có thể gửi thêm bình luận và hình ảnh thực tế.' : '');
+                setReviewFormLockedState(!response.data?.canComment, formMessage);
+                syncReviewRatingState();
             } catch (error) {
                 console.error('Error loading comment eligibility:', error);
+                hasRatedCurrentProduct = false;
                 setReviewFormLockedState(true, error.message || 'Không thể kiểm tra quyền đánh giá lúc này.');
+                syncReviewRatingState();
             }
         }
 
@@ -883,7 +1045,7 @@
         function setupStarRating() {
             document.querySelectorAll('.star-rating i').forEach(star => {
                 star.addEventListener('click', function() {
-                    if (document.getElementById('reviewFormWrapper').classList.contains('is-locked')) {
+                    if (document.getElementById('reviewFormWrapper').classList.contains('is-locked') || hasRatedCurrentProduct) {
                         return;
                     }
 
@@ -935,6 +1097,23 @@
                 window.setWishlistButtonState(this, result.active, { textMode: true });
             });
 
+            document.getElementById('reviewImages').addEventListener('change', handleReviewImageSelection);
+            document.getElementById('reviewImagePreview').addEventListener('click', handleReviewImagePreviewClick);
+            document.getElementById('reviewsList').addEventListener('click', function(event) {
+                const deleteButton = event.target.closest('.review-delete-btn');
+                if (deleteButton) {
+                    handleCommentDelete(deleteButton.dataset.commentId);
+                    return;
+                }
+
+                const imageButton = event.target.closest('.review-image-thumb');
+                if (!imageButton) {
+                    return;
+                }
+
+                openImageLightbox(imageButton.dataset.reviewImage);
+            });
+
             document.getElementById('submitReviewForm').addEventListener('submit', async function(event) {
                 event.preventDefault();
 
@@ -942,7 +1121,7 @@
                     return;
                 }
 
-                if (!selectedRating) {
+                if (!hasRatedCurrentProduct && !selectedRating) {
                     alert('Vui lòng chọn số sao đánh giá.');
                     return;
                 }
@@ -954,14 +1133,21 @@
                 }
 
                 try {
-                    await window.CommentAPI.createComment({
-                        productId: currentProduct._id,
-                        rating: selectedRating,
-                        content
+                    const formData = new FormData();
+                    formData.append('productId', currentProduct._id);
+                    if (!hasRatedCurrentProduct && selectedRating) {
+                        formData.append('rating', String(selectedRating));
+                    }
+                    formData.append('content', content);
+                    selectedReviewImages.forEach((file) => {
+                        formData.append('images', file);
                     });
+
+                    await window.CommentAPI.createCommentForm(formData);
 
                     document.getElementById('reviewText').value = '';
                     selectedRating = 0;
+                    resetReviewImageSelection();
                     document.querySelectorAll('.star-rating i').forEach((item) => {
                         item.classList.remove('fas', 'active');
                         item.classList.add('far');
