@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const http = require('http');
 const socketIO = require('socket.io');
+const User = require('./src/models/User');
 
 // Load environment variables
 dotenv.config();
@@ -33,7 +34,51 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
 const connectDB = require('./src/config/database');
-connectDB();
+
+const DEFAULT_ADMIN_ACCOUNT = {
+  fullName: 'MARC Admin',
+  email: 'admin@marc.com',
+  password: 'admin123456',
+  role: 'admin',
+  isActive: true,
+  provider: 'local'
+};
+
+const ensureDefaultAdminAccount = async () => {
+  try {
+    const existingUser = await User.findOne({ email: DEFAULT_ADMIN_ACCOUNT.email.toLowerCase() });
+
+    if (!existingUser) {
+      await User.create(DEFAULT_ADMIN_ACCOUNT);
+      console.log(`Default admin account created: ${DEFAULT_ADMIN_ACCOUNT.email}`);
+      return;
+    }
+
+    let hasChanges = false;
+
+    if (existingUser.role !== 'admin') {
+      existingUser.role = 'admin';
+      hasChanges = true;
+    }
+
+    if (!existingUser.isActive) {
+      existingUser.isActive = true;
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      await existingUser.save();
+      console.log(`Default admin account synced: ${DEFAULT_ADMIN_ACCOUNT.email}`);
+      return;
+    }
+
+    console.log(`Default admin account already exists: ${DEFAULT_ADMIN_ACCOUNT.email}`);
+  } catch (error) {
+    console.error('Failed to ensure default admin account:', error.message);
+  }
+};
+
+connectDB().then(() => ensureDefaultAdminAccount());
 
 // Attach io to app for use in routes
 app.use((req, res, next) => {
