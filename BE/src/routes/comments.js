@@ -11,6 +11,15 @@ const { buildUploadedFileUrl, deleteUploadFiles } = require('../utils/uploadStor
 
 const router = express.Router();
 
+const buildAdminReplyPayload = (user, content, existingReply = null) => ({
+  content,
+  repliedBy: user._id,
+  adminName: user.fullName || 'Admin',
+  adminAvatar: user.avatar || null,
+  createdAt: existingReply?.createdAt || new Date(),
+  updatedAt: new Date()
+});
+
 const findAnyPurchasedOrder = (userId, productId) => Order.findOne({
   user: userId,
   'items.product': productId,
@@ -266,6 +275,58 @@ router.put('/:commentId', authenticate, async (req, res, next) => {
 
     await updateProductCommentStats(currentComment.product?._id || currentComment.product);
     return res.status(200).json({ success: true, data: commentController.formatComment(comment) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/:commentId/reply', authenticate, async (req, res, next) => {
+  try {
+    if (req.userRole !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Chỉ admin mới có thể phản hồi đánh giá' });
+    }
+
+    const currentComment = await commentController.findCommentById(req.params.commentId);
+    if (!currentComment) {
+      return res.status(404).json({ success: false, message: 'Comment not found' });
+    }
+
+    const content = String(req.body.content || '').trim();
+    if (!content) {
+      return res.status(400).json({ success: false, message: 'Nội dung phản hồi không được để trống' });
+    }
+
+    const comment = await commentController.updateComment(req.params.commentId, {
+      adminReply: buildAdminReplyPayload(req.user, content, currentComment.adminReply)
+    });
+
+    return res.status(200).json({ success: true, data: commentController.formatComment(comment) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/:commentId/reply', authenticate, async (req, res, next) => {
+  try {
+    if (req.userRole !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Chỉ admin mới có thể xóa phản hồi đánh giá' });
+    }
+
+    const currentComment = await commentController.findCommentById(req.params.commentId);
+    if (!currentComment) {
+      return res.status(404).json({ success: false, message: 'Comment not found' });
+    }
+
+    if (!currentComment.adminReply?.content) {
+      return res.status(404).json({ success: false, message: 'Đánh giá này chưa có phản hồi từ admin' });
+    }
+
+    await Comment.findByIdAndUpdate(req.params.commentId, {
+      $unset: { adminReply: 1 }
+    });
+
+    const updatedComment = await commentController.findCommentById(req.params.commentId);
+    return res.status(200).json({ success: true, data: commentController.formatComment(updatedComment) });
   } catch (error) {
     next(error);
   }

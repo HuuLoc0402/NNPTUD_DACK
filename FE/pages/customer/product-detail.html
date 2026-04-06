@@ -496,8 +496,60 @@
             return String(user?._id || user?.id || '');
         }
 
+        function isAdminReviewUser() {
+            const user = window.getStoredUser?.();
+            return String(user?.role || '').toLowerCase() === 'admin';
+        }
+
+        function getAdminReplyAvatarUrl(reply) {
+            return window.CONFIG?.resolveMediaUrl(reply?.adminAvatar, '') || '';
+        }
+
         function canDeleteComment(comment) {
             return Boolean(comment?._id && getCurrentReviewUserId() && String(comment?.user?._id || comment?.user?.id || '') === getCurrentReviewUserId());
+        }
+
+        function renderAdminReply(reply) {
+            if (!reply?.content) {
+                return '';
+            }
+
+            const avatarUrl = getAdminReplyAvatarUrl(reply);
+            const adminName = escapeHtml(reply.adminName || 'MARC Admin');
+            return `
+                <div class="review-admin-reply">
+                    <div class="review-admin-reply-avatar ${avatarUrl ? 'has-image' : ''}">
+                        ${avatarUrl
+                            ? `<img src="${avatarUrl}" alt="${adminName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                            : ''}
+                        <span class="review-admin-reply-fallback" style="display:${avatarUrl ? 'none' : 'flex'};">AD</span>
+                    </div>
+                    <div class="review-admin-reply-body">
+                        <div class="review-admin-reply-meta">
+                            <span class="review-admin-reply-author">${adminName}</span>
+                            <span class="review-admin-reply-date">${escapeHtml(formatReviewDate(reply.updatedAt || reply.createdAt))}</span>
+                        </div>
+                        <div class="review-admin-reply-text">${escapeHtml(reply.content)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminReplyEditor(comment) {
+            if (!isAdminReviewUser() || !comment?._id) {
+                return '';
+            }
+
+            return `
+                <form class="admin-reply-form" data-comment-id="${escapeHtml(comment._id)}">
+                    <label class="admin-reply-label" for="adminReply-${escapeHtml(comment._id)}">Phản hồi với tư cách admin</label>
+                    <textarea id="adminReply-${escapeHtml(comment._id)}" class="admin-reply-textarea" name="content" placeholder="Nhập phản hồi cho đánh giá này...">${escapeHtml(comment.adminReply?.content || '')}</textarea>
+                    <div class="admin-reply-actions">
+                        <button type="submit" class="review-reply-submit-btn">${comment.adminReply?.content ? 'Cập nhật phản hồi' : 'Gửi phản hồi'}</button>
+                        ${comment.adminReply?.content ? `<button type="button" class="review-reply-delete-btn" data-comment-id="${escapeHtml(comment._id)}">Xóa phản hồi</button>` : ''}
+                    </div>
+                </form>
+            `;
         }
 
         function renderColorOptions(product) {
@@ -700,6 +752,8 @@
                         ${comment.title ? `<div class="review-title">${escapeHtml(comment.title)}</div>` : ''}
                         <div class="review-text">${escapeHtml(comment.content)}</div>
                         ${renderCommentImages(comment.images || [])}
+                        ${renderAdminReply(comment.adminReply)}
+                        ${renderAdminReplyEditor(comment)}
                     </div>
                 </article>
             `).join('');
@@ -845,6 +899,57 @@
                 alert('Đã xóa đánh giá thành công.');
             } catch (error) {
                 alert(error.message || 'Không thể xóa đánh giá lúc này.');
+            }
+        }
+
+        async function handleCommentReply(commentId, content, submitButton) {
+            if (!commentId || !currentProduct) {
+                return;
+            }
+
+            const trimmedContent = String(content || '').trim();
+            if (!trimmedContent) {
+                alert('Vui lòng nhập nội dung phản hồi.');
+                return;
+            }
+
+            const originalLabel = submitButton?.textContent || '';
+
+            try {
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Đang lưu...';
+                }
+
+                await window.CommentAPI.replyToComment(commentId, { content: trimmedContent });
+                await loadComments(currentProduct._id);
+                alert('Đã lưu phản hồi của admin.');
+            } catch (error) {
+                alert(error.message || 'Không thể lưu phản hồi lúc này.');
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalLabel;
+                }
+            }
+        }
+
+        async function handleCommentReplyDelete(commentId) {
+            if (!commentId || !currentProduct) {
+                return;
+            }
+
+            const confirmed = window.confirm('Bạn có chắc muốn xóa phản hồi admin cho đánh giá này không?');
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                await window.CommentAPI.deleteReply(commentId);
+                await loadComments(currentProduct._id);
+                alert('Đã xóa phản hồi của admin.');
+            } catch (error) {
+                alert(error.message || 'Không thể xóa phản hồi lúc này.');
             }
         }
 
@@ -1106,12 +1211,30 @@
                     return;
                 }
 
+                const deleteReplyButton = event.target.closest('.review-reply-delete-btn');
+                if (deleteReplyButton) {
+                    handleCommentReplyDelete(deleteReplyButton.dataset.commentId);
+                    return;
+                }
+
                 const imageButton = event.target.closest('.review-image-thumb');
                 if (!imageButton) {
                     return;
                 }
 
                 openImageLightbox(imageButton.dataset.reviewImage);
+            });
+
+            document.getElementById('reviewsList').addEventListener('submit', function(event) {
+                const replyForm = event.target.closest('.admin-reply-form');
+                if (!replyForm) {
+                    return;
+                }
+
+                event.preventDefault();
+                const textarea = replyForm.querySelector('.admin-reply-textarea');
+                const submitButton = replyForm.querySelector('.review-reply-submit-btn');
+                handleCommentReply(replyForm.dataset.commentId, textarea?.value || '', submitButton);
             });
 
             document.getElementById('submitReviewForm').addEventListener('submit', async function(event) {

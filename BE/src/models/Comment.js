@@ -39,6 +39,29 @@ const commentSchema = new mongoose.Schema(
         _id: false
       }
     ],
+    adminReply: {
+      _id: false,
+      content: {
+        type: String,
+        trim: true,
+        maxlength: [1000, 'Admin reply cannot exceed 1000 characters']
+      },
+      repliedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      adminName: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Admin name cannot exceed 100 characters']
+      },
+      adminAvatar: {
+        type: String,
+        default: null
+      },
+      createdAt: Date,
+      updatedAt: Date
+    },
     isVerified: {
       type: Boolean,
       default: false

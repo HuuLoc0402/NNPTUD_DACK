@@ -168,6 +168,8 @@ window.CommentAPI = {
     getEligibility: (productId) => window.apiClient.get(`/comments/product/${productId}/eligibility`),
     createComment: (data) => window.apiClient.post('/comments', data),
     createCommentForm: (formData) => window.apiClient.postFormData('/comments', formData),
+    replyToComment: (commentId, data) => window.apiClient.put(`/comments/${commentId}/reply`, data),
+    deleteReply: (commentId) => window.apiClient.delete(`/comments/${commentId}/reply`),
     deleteComment: (commentId) => window.apiClient.delete(`/comments/${commentId}`)
 };
 
